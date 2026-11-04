@@ -203,7 +203,7 @@ VISION_MAX_IMAGES="${VISION_MAX_IMAGES:-50}"     # --vision-max-images: images p
 # branch writes GLM's image and video markers instead of a "cannot see" note); none = the checkpoint's; or a file path
 CHAT_TEMPLATE="${CHAT_TEMPLATE:-auto}"
 THINKING="${THINKING:-0}"                        # --thinking / --no-thinking default; requests override
-REASONING_EFFORT="${REASONING_EFFORT:-high}"     # --reasoning-effort low|medium|high|xhigh (empty: omit)
+REASONING_EFFORT="${REASONING_EFFORT:-xhigh}"    # --reasoning-effort low|medium|high|xhigh (empty: omit); xhigh renders the checkpoint's trained "Reasoning Effort: Max" line
 MAX_TOKENS="${MAX_TOKENS:-32768}"                # --max-tokens default reply limit
 CLEAR_THINKING="${CLEAR_THINKING:-1}"            # TF_GLM_CLEAR_THINKING: 1 drops earlier turns' reasoning, 0 keeps it
 # TF_GLM_CE_EXCHANGE moves a prompt chunk's split exchanges by copy engines into the peer's registered rows, which
