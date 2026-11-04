@@ -1,5 +1,12 @@
 # Changelog
 
+- **2026-11-04** -- `./start-tp4.sh` and `./stop-tp4.sh`: the recipe over four DGX Sparks cabled as a ring without a
+  switch (README "4 Sparks"). The ring is found from the Sparks' ConnectX-7 addresses; NCCL runs ring-only with a graph
+  file per rank and subnet-aware routing, connected at first use (the engine's connect-everything-at-init would join
+  rank 0 to the Spark across the ring, where the first boot timed out); the engine's prefill exchanges run as all-gathers
+  between neighbours; the workers read the head's checkpoint over NFS. Engine patch `0106`: the start's peer warm-up
+  follows `TF_GLM_PREFILL_REDUCE` (split: every peer; ring: next and previous; gather: none) instead of sending to every
+  rank. The two-Spark `./start.sh` is unchanged. Measurements: docs/speed/RESULTS.md, "TP=4 on the four-Spark ring".
 - **2026-11-04** -- Upstream TensorFold since this recipe's pin (`f350cd3e`, 1,059 commits behind main) was reviewed for
   fixes worth carrying (docs/speed/RESULTS.md, "Upstream since the pin"). The one that applied cleanly, the lane fix
   `ed39acc5a` (a stream finishing on its first token released its lane only after its trace), was built as `0106` and
