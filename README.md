@@ -174,7 +174,7 @@ variables. **The served pair's `local.sh`** sets `PORT=8888`, `PARALLEL=8`, `CON
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `MODEL_SOURCE`, `MODEL_DIR` | `download`, `DATA_DIR/model` | Fetch the pinned 4 bpw checkpoint when missing, or `local` to serve `MODEL_DIR` as it is |
+| `MODEL_SOURCE`, `MODEL_DIR` | `download`, `DATA_DIR/model` | Fetch the pinned 4 bpw checkpoint when missing, or `local` to serve `MODEL_DIR` as it is (a tree with no `.revision` marker is checked by its config.json and shards) |
 | `ABLIT` | `0` | `1`: the gated [Ablit weights](#ablit-weights); needs `HF_TOKEN` |
 | `DRAFTER`, `DRAFTER_BITS` | `dflash2`, `4` | `dflash2`, `mtp` (the checkpoint's own head) or `none` |
 | `PARALLEL` | `4` | `--parallel`; admitted only if it fits, `auto` serves up to 8. The pair runs 8: free at 1-4 streams, 94-95 tok/s at 6, 105-106 at 8 |

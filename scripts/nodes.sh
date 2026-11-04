@@ -245,7 +245,16 @@ worker_free_gib() { wssh df -Pk -- "$1" 2>/dev/null | awk 'END {printf "%d\n", $
 worker_weights_ready() {
   wssh test -f "$1/config.json" >/dev/null 2>&1 || return 1
   [[ -n "$2" ]] || return 0
-  [[ "$(wssh cat "$1/.revision" 2>/dev/null || true)" == "$2" ]]
+  local marker
+  marker=$(wssh cat "$1/.revision" 2>/dev/null || true)
+  if [[ -n "$marker" ]]; then
+    [[ "$marker" == "$2" ]]
+  else
+    # No marker at all: a MODEL_SOURCE=local checkpoint prepared outside this recipe. Its config.json and shards
+    # stand for it, as the header comment says. MODEL_REVISION defaults with :-, so the argument above is never
+    # empty in the recipe's calls and cannot itself say "skip the marker".
+    wssh sh -c 'ls "$1"/*.safetensors >/dev/null 2>&1' sh "$1" >/dev/null 2>&1
+  fi
 }
 
 # --- the worker's weights --------------------------------------------------------------------------------------------
@@ -328,7 +337,7 @@ prepare_worker_weights() {
     check)
       if [[ "$DRY_RUN" != 1 ]]; then
         worker_weights_ready "$WORKER_MODEL_DIR" "$MODEL_REVISION" \
-          || fail E_WEIGHTS "$(worker_host) has no checkpoint at ${MODEL_REVISION:0:12} in $WORKER_MODEL_DIR. Set WORKER_WEIGHTS=rsync to send this Spark's copy, or WORKER_WEIGHTS=nfs to mount it."
+          || fail E_WEIGHTS "$(worker_host) has no checkpoint at ${MODEL_REVISION:0:12} in $WORKER_MODEL_DIR. Set WORKER_WEIGHTS=rsync to send this Spark's copy, WORKER_WEIGHTS=nfs to mount it, or write $MODEL_REVISION to $WORKER_MODEL_DIR/.revision when that tree is this checkpoint."
         [[ "$DRAFTER" != dflash2 ]] || wssh test -f "$WORKER_DFLASH2_DIR/config.json" >/dev/null 2>&1 \
           || fail E_WEIGHTS "$(worker_host) has no DFlash2 weights in $WORKER_DFLASH2_DIR (WORKER_WEIGHTS=check)."
         log "[I_WEIGHTS] $(worker_host) holds the checkpoint and the drafter."

@@ -1,5 +1,8 @@
 # Changelog
 
+- **2026-11-04** -- `WORKER_WEIGHTS=check` accepts a local checkpoint with no `.revision` marker when its config.json
+  and shards are there, as `worker_weights_ready`'s comment always said; `MODEL_REVISION`'s default made the marker
+  mandatory even for `MODEL_SOURCE=local` (issue 3, failure 1). The `E_WEIGHTS` hint names the marker.
 - **2026-11-04** -- `start.sh` runs rank 1 as the worker's own login when `CONTAINER_USER` is this Spark's (the default), as
   `scripts/tp4.sh` already does. With different ids on the two Sparks (uid 1000 and 1001 on ours), rank 1 could not write
   to its state folder and stopped at `hashing the checkpoint failed at model-00001-of-00083.safetensors` with
