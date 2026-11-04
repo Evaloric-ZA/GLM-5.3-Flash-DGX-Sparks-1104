@@ -65,9 +65,12 @@ line (see [CREDITS.md](CREDITS.md)). Those names must stay on them. Some were re
 GLM-5.3-Flash EXL3 with TensorFold on one host with 4x RTX PRO 6000 Blackwell
 Copyright 2026 Aevonix Research. Licensed under the Apache License, Version 2.0.
 
-**Changes:** `start.sh`, `stop.sh`, `scripts/config.sh`, `scripts/prepare.sh` and `scripts/banner.sh` are adapted from that recipe and
-changed to serve TensorFold's native Zig engine on two GPUs, built in Docker. Patch 0078's main loop follows the K12 loop in its Python patch series
-(patch 0073, MiaAI-Lab/Aevonix), rewritten for the native engine's kernels.
+**Changes:** the serving scripts descend from this lab's own: Aevonix's `start.sh` and `scripts/config.sh` rework the lab's
+`scripts/config.sh` and `start-tp4.sh` (GLM-5.3-Flash-EXL3-4x-DGX-Sparks-TensorFold), and its `stop.sh` and `scripts/prepare.sh`
+are adapted from the lab's scripts, as Aevonix's NOTICE states; this recipe takes them through that rework and changes them to
+serve TensorFold's native Zig engine on two GPUs, built in Docker. `scripts/banner.sh` is the lab's own art, not Aevonix's.
+Patch 0078's main loop follows the K12 loop of Aevonix's patch 0073 (`patches/aevonix/0073` there), rewritten for the native
+engine's kernels.
 
 ## DeepSeek-V4.1-Flash-1017-4x-DGX-Sparks-TensorFold
 

@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-11-04** -- CREDITS and NOTICE, the Aevonix entry corrected: it said this recipe's `start.sh`, `stop.sh`,
+  `scripts/config.sh`, `scripts/prepare.sh` and `scripts/banner.sh` are adapted from Aevonix's 4x RTX PRO 6000 recipe, which
+  states the direction backwards. The adaptation began from this lab's own scripts: Aevonix's NOTICE names the lab's
+  `scripts/config.sh` and `start-tp4.sh` (GLM-5.3-Flash-EXL3-4x-DGX-Sparks-TensorFold, created 2026-10-01, the day before
+  Aevonix's repository) as "the basis" of their `start.sh` and `scripts/config.sh`, and their `stop.sh` and
+  `scripts/prepare.sh` as "adapted from Mia's scripts"; and `scripts/banner.sh` here is the lab's own art - the two-Spark and
+  four-Spark recipes carry the same MIA AI LAB banner file and this recipe recolours it, while Aevonix's banner is their own
+  artwork, so it never came from them. The old text also cited patch 0073 to "MiaAI-Lab/Aevonix", a repository that does not
+  exist; the K12 loop patch 0078 follows is `patches/aevonix/0073` in Aevonix's repository. What survives of the credit: this
+  recipe's four serving scripts do pass through Aevonix's rework (the 2x RTX PRO 6000 recipe adopted it - their texts are the
+  closest matches to ours), so Aevonix stays credited for the intermediate rework and the K12 loop, as the reworker of the
+  lab's scripts rather than their origin.
 - **2026-11-04** -- `./start-tp4.sh` and `./stop-tp4.sh`: the recipe over four DGX Sparks cabled as a ring without a
   switch (README "4 Sparks"). The ring is found from the Sparks' ConnectX-7 addresses; NCCL runs ring-only with a graph
   file per rank and subnet-aware routing, connected at first use (the engine's connect-everything-at-init would join
