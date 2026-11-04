@@ -341,9 +341,16 @@ graph_xml() {
 # here 2026-11-04, ncclCommInitRank timed out in ibv_modify_qp toward the Spark across the ring. Connected at first use,
 # only the ring's channels are ever made (NCCL_ALGO=Ring), at the ranks' first all-gather, before the weights load.
 # NCCL needs cuMem for that (NCCL_CUMEM_ENABLE=1); the host-side cuMem buffers stay off as the engine sets them.
+# NCCL_SOCKET_IFNAME goes to rank 0 only: a follower that names one makes the engine unset NCCL_COMM_ID before NCCL
+# (cuda_native.zig), and the engine's std library then stops at the first stderr lock after that ("thread N panic:
+# attempt to use null value", measured here 2026-11-04 on the spark3+spark4 pair under NCCL_RUNTIME_CONNECT=1: libc's
+# unsetenv shortens the environment under Zig's fixed-length view of it). Without it a follower keeps NCCL_COMM_ID,
+# and NCCL finds its bootstrap interface by that address's subnet: MASTER_ADDR is therefore this Spark's address on
+# the network every Spark shares (the LAN), not an alias only this Spark holds.
 tp4_rank_env() {
   local r=$1
-  RANK_ENV=(-e "TF_GLM_RANK=$r" -e "NCCL_SOCKET_IFNAME=${NODE_DEV[r]}" -e "NCCL_IB_HCA=${NODE_HCAS[r]}")
+  RANK_ENV=(-e "TF_GLM_RANK=$r" -e "NCCL_IB_HCA=${NODE_HCAS[r]}")
+  (( r != 0 )) || RANK_ENV+=(-e "NCCL_SOCKET_IFNAME=${NODE_DEV[r]}")
   [[ -z "${NODE_GID[r]}" ]] || RANK_ENV+=(-e "NCCL_IB_GID_INDEX=${NODE_GID[r]}")
   RANK_ENV+=(-e "NCCL_ALGO=$RING_NCCL_ALGO" -e NCCL_GRAPH_FILE=/nccl-graph.xml -e NCCL_CROSS_NIC=1 -e NCCL_IB_SUBNET_AWARE_ROUTING=1
              -e NCCL_P2P_DISABLE=1 -e NCCL_SHM_DISABLE=1 -e NCCL_IB_MERGE_NICS=0

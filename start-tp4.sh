@@ -27,11 +27,15 @@ set_image
 inspect_model
 # The ring carries every exchange on NCCL: the engine's two-rank RoCE path and peer-store gathers do not apply at four.
 ROCE=off
+# NCCL_COMM_ID's address: this Spark's address on the network every Spark shares, the one its default route leaves
+# with (the LAN). Every rank keeps NCCL_COMM_ID and NCCL finds its bootstrap interface by that address's subnet (see
+# tp4_rank_env in scripts/tp4.sh); the ranks' watch lines go to its port plus one. MASTER_ADDR overrides it.
 if [[ -z "$MASTER_ADDR" ]]; then
-  MASTER_ADDR=$(getent ahostsv4 "$(hostname)" 2>/dev/null | awk '$1 !~ /^127\./ {print $1; exit}' || true)
-  [[ -n "$MASTER_ADDR" ]] || MASTER_ADDR=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
-  [[ -n "$MASTER_ADDR" ]] || fail E_CONFIG 'MASTER_ADDR is empty and this Spark'"'"'s name resolves to nothing: set MASTER_ADDR to an address of this Spark every worker reaches.'
+  MASTER_ADDR=$(ip -o -4 route show default 2>/dev/null | sed -n 's/.* src \([^ ]*\).*/\1/p' | head -1)
+  [[ -n "$MASTER_ADDR" ]] || MASTER_ADDR=$(ip -o -4 addr show dev "$(ip -o -4 route show default 2>/dev/null | sed -n 's/.* dev \([^ ]*\).*/\1/p' | head -1)" 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+  [[ -n "$MASTER_ADDR" ]] || fail E_CONFIG 'MASTER_ADDR is empty and this Spark has no default route: set MASTER_ADDR to an address of this Spark every worker reaches.'
 fi
+[[ "$MASTER_ADDR" =~ ^[0-9]+(\.[0-9]+){3}$ ]] || fail E_CONFIG "MASTER_ADDR must be an IPv4 address (the ranks' watch lines take no host name), not $MASTER_ADDR."
 
 step() { printf '\n[%s/6] %s\n' "$1" "$2"; }
 bits() { case "$1" in bf16) echo 16 ;; q8) echo 8 ;; q6) echo 6 ;; q4) echo 4 ;; esac; }
