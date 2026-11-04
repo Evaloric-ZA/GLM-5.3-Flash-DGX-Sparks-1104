@@ -4,7 +4,7 @@ exl3p 0067: exl3 cuda: the prompt kernels' main loop compiled for an item's 8-me
 
 tf_exl3_prompt_gu / _down (and their _k6 twins) keep their items, blocks, B fragments and fp32 chains (each output one
 chain of mma.m16n8k16 over the ascending k tiles from zero) and their epilogues' arithmetic; the main loop is fed
-differently, after the Python recipe's K12 loop (MiaAI-Lab/Aevonix patch 0073):
+differently, after the K12 loop of patch 0073, patches/aevonix/0073 in Aevonix's GLM-5.3-Flash-EXL3-4x-RTX-PRO-6000-TensorFold:
 - compiled for the item's 8-member column blocks (NBA 1..8, a switch on the count): no predicate, no MMA on a column block
   without a member, no member-row load nobody reads;
 - two decoded A fragment sets: the next k tile's trellis decode issues among the current k tile's MMAs, across the stage

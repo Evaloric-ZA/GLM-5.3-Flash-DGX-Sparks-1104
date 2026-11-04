@@ -1,5 +1,11 @@
 # Changelog
 
+- **2026-11-04** -- CREDITS and NOTICE: the Aevonix entry removed. On reflection it earns no line here: the serving scripts are
+  this lab's own (Aevonix's recipe reworked the lab's GLM-5.3-Flash-EXL3-4x-DGX-Sparks-TensorFold scripts, and this recipe's
+  copies reach it through the lab's 2x RTX PRO 6000 recipe), the banner was never theirs, and the lab's own 2x RTX PRO 6000
+  repository keeps the credit where its scripts are Aevonix's rework outright. The one debt that survives is the K12 loop, now
+  recorded where it is used: patch 0078's comment names patches/aevonix/0073 in Aevonix's
+  GLM-5.3-Flash-EXL3-4x-RTX-PRO-6000-TensorFold (it said MiaAI-Lab/Aevonix, a repository that does not exist).
 - **2026-11-04** -- CREDITS and NOTICE, the Aevonix entry corrected: it said this recipe's `start.sh`, `stop.sh`,
   `scripts/config.sh`, `scripts/prepare.sh` and `scripts/banner.sh` are adapted from Aevonix's 4x RTX PRO 6000 recipe, which
   states the direction backwards. The adaptation began from this lab's own scripts: Aevonix's NOTICE names the lab's

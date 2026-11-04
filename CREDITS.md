@@ -42,13 +42,6 @@ License 2.0), carried upstream in TensorFold as `zig/src/cuda/roce.zig`.
 
 ## Work this recipe adapts
 
-- **[Aevonix Research](https://aevonix.com)** (GLM-5.3-Flash EXL3 on 4x RTX PRO 6000, by Kurcide, Apache-2.0). The serving scripts
-  came from this lab's own recipes, not the other way round: Aevonix's `start.sh` and `scripts/config.sh` are reworks of the lab's
-  `scripts/config.sh` and `start-tp4.sh` from GLM-5.3-Flash-EXL3-4x-DGX-Sparks-TensorFold, and its `stop.sh` and
-  `scripts/prepare.sh` are adapted from the lab's scripts too, as Aevonix's own NOTICE records; this recipe's copies reach it
-  through the 2x RTX PRO 6000 recipe, which took that rework for its single-host pair. `scripts/banner.sh` is the lab's own art
-  (the two-Spark and four-Spark recipes share it; this one recolours it) - Aevonix drew their own. Patch 0078's main loop follows
-  the K12 loop of Aevonix's patch 0073 (`patches/aevonix/0073` in that repository, TensorFold v0.6.6).
 - **[GLM-5.3-Flash](https://huggingface.co/zai-org/GLM-5.3-Flash)** by Z.ai (MIT): `templates/glm-5.3-flash-vision.jinja` is the
   checkpoint's own chat template with its media branch changed.
 - **[DeepSeek-V4.1-Flash-1017-4x-DGX-Sparks-TensorFold](https://github.com/MiaAI-Lab/DeepSeek-V4.1-Flash-1017-4x-DGX-Sparks-TensorFold)**
