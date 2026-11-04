@@ -1577,3 +1577,23 @@ cache** a rank, no "cannot keep one state". KV pool 8,392,704 tokens shared by 8
 memguard floor is 2.5). Settings on spark1 (scripts/local.sh, untracked): PARALLEL=8, CONTEXT=auto (1,048,576 fit
 first try), KV=fp8, DENSE=q8, HEAD=q8, ABSORB_MMA=1, HOST_CACHE_GIB=0, MEMORY_RESERVE_GIB=12, WORKER_WEIGHTS=nfs,
 NFS_MODEL_PATH=/huggingface/glm53-1104/model, MODEL_REVISION=078455ff (byte-identical to the pin), PORT=8888.
+
+**GO-2 met (19:30-20:05 local, spark5's harness against spark1:8888; logs in docs/speed/tp4/):** two acc.py runs give
+the same token_sha each time (prose `b6ae240144bc`, code `9b68d8a77151`; not the pair's hashes, as pre-registered: a
+different partition); `draft: false` gives the same 600 prose tokens and hash as drafts on; the 4-stream contract
+runs returned whole. The TP=4 band, greedy, against pair A's on the same harness:
+
+| | pair A (TP=2, 105 patches) | four Sparks (TP=4, 106 patches) |
+|---|---|---|
+| 1 stream prose / code (tok/s) | 38.4 / 56.6 | 56.0-56.2 / 84.5-85.3 (ms/round 36.6 / 44.3, accepted 57% / 74%) |
+| 4 streams prose, total | 79-81 | 115-120 |
+| 6 / 8 streams prose, total | 94-95 / 105-106 | 139-141 / 163-166 |
+| prefill 16K / 64K (tok/s) | ~1,600-1,800 | 1,752 / 1,889 (TTFT 9.1 s / 33.8 s) |
+| conc2 / conc4 total | - / 79-81 | 86.6 / 118.4 |
+| mixed1: decoder before / during / after a 50K prefill | - | 63.6 / 19.8 / 58.4 tok/s (gap p95 53 ms, max 2.6 s) |
+| prefill pair (30K + 30K) | - | 16.4 s alone; 16.4 s and 33.8 s as a pair |
+
+Decode +46% at one stream, +48% at four, +55% at eight; prefill about the pair's (the ring's exchanges go round four
+hops). Available memory after the benches: spark1 12.2 GiB, spark2 14.0, spark3 11.9, spark4 14.2. Not measured yet:
+PREFILL_REDUCE=ring (the split prefill's rows passed along the ring; the engine's own neighbours-only mode) against
+gather, sampled decode at T=0.7, and a long soak. 0106 is in patches/engine (image daa6f2cde063 on all four Sparks).

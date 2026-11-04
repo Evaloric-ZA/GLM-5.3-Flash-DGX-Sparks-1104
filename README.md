@@ -257,6 +257,20 @@ What differs from the pair (`scripts/tp4.sh`):
   planner has far more room: eight 1M-token windows and a prompt cache usually fit at the recipe's default reserve.
   Read rank 0's startup line after every start (the pages, the prompt cache, no "cannot keep one state").
 
+Measured 2026-11-04 on this kit (spark1 rank 0, image `daa6f2cde063`, 8 streams, 1M window, FP8 KV on pages, q8
+dense and head, DFlash2; greedy, the same harness as the pair's numbers under [Performance](#performance)):
+
+| | two Sparks (TP=2) | four Sparks (TP=4, a ring) |
+| --- | ---: | ---: |
+| 1 stream, prose / code | 38.4 / 56.6 tok/s | 56.1 / 85.0 tok/s |
+| 4 streams, prose, total | 79-81 tok/s | 115-120 tok/s |
+| 8 streams, prose, total | 105-106 tok/s | 163-166 tok/s |
+| prefill 16K / 64K | ~1,600-1,800 tok/s | 1,752 / 1,889 tok/s |
+| KV pool | 4,098 pages (2.1M tokens) | 16,392 pages (8.4M tokens), 3.6 GiB prompt cache |
+
+Rank 0 loads 45.6 GiB; each rank's NCCL connects only to its two neighbours. Greedy replies are repeatable run to
+run and the same with drafts off; they are not the pair's tokens (a different partition rounds differently).
+
 Settings beside the pair's: `WORKER2`, `WORKER3`, `MASTER_ADDR`, `SOCKET_IFNAME`, `PREFILL_REDUCE` (`gather`),
 `RING_NCCL_ALGO` (`Ring`), `NFS_MODEL_PATH`, `NFS_DFLASH2_PATH`, `NFS_SERVER1..3`. Logs: `logs/current/rank0..3.log`.
 

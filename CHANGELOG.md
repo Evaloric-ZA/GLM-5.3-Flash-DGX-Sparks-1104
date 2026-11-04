@@ -24,7 +24,11 @@
   rank 0 to the Spark across the ring, where the first boot timed out); the engine's prefill exchanges run as all-gathers
   between neighbours; the workers read the head's checkpoint over NFS. Engine patch `0106`: the start's peer warm-up
   follows `TF_GLM_PREFILL_REDUCE` (split: every peer; ring: next and previous; gather: none) instead of sending to every
-  rank. The two-Spark `./start.sh` is unchanged. Measurements: docs/speed/RESULTS.md, "TP=4 on the four-Spark ring".
+  rank. NCCL connects at first use (`NCCL_RUNTIME_CONNECT=1`) and bootstraps on the head's LAN address, so neither
+  NCCL's tree nor the engine's follower start-up reaches the Spark across the ring. Measured on this kit (greedy, the
+  recipe's harness): 56 / 85 tok/s prose / code at one stream against the pair's 38 / 57, 115-120 at four streams
+  against 79-81, 163-166 at eight against 105-106, prefill 1,750-1,890 tok/s, eight 1M windows and a 3.6 GiB prompt
+  cache a rank. The two-Spark `./start.sh` is unchanged. Details: docs/speed/RESULTS.md, "TP=4 on the four-Spark ring".
 - **2026-11-04** -- Upstream TensorFold since this recipe's pin (`f350cd3e`, 1,059 commits behind main) was reviewed for
   fixes worth carrying (docs/speed/RESULTS.md, "Upstream since the pin"). The one that applied cleanly, the lane fix
   `ed39acc5a` (a stream finishing on its first token released its lane only after its trace), was built as `0106` and
