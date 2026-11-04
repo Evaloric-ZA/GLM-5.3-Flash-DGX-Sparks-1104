@@ -280,10 +280,20 @@ api_curl() {
 # Rank 1 on the worker first: it retries its line to rank 0 for up to 300 s. Then rank 0 here, which serves the API.
 launch() {
   local ctx=$1
-  local -a user_args=() mounts=() cmd=() wcmd=()
+  local -a user_args=() worker_user_args=() mounts=() cmd=() wcmd=()
+  local worker_ug='' unwritable
   build_serve_args "$ctx"
   build_env_args
   [[ -z "$CONTAINER_USER" ]] || user_args=(--user "$CONTAINER_USER")
+  worker_user_args=("${user_args[@]}")
+  # The worker's own login when CONTAINER_USER is this Spark's (the default, or set to the same value), as scripts/tp4.sh
+  # does: the two logins can have different ids, and rank 1 writes to a state folder its own login owns. Root or another
+  # UID:GID crosses as given.
+  if [[ "$CONTAINER_USER" == "$(id -u):$(id -g)" ]]; then
+    worker_ug=$(wssh sh -c 'printf "%s:%s\n" "$(id -u)" "$(id -g)"') && [[ "$worker_ug" =~ ^[0-9]+:[0-9]+$ ]] \
+      || fail E_WORKER "Could not read the login's ids on $(worker_host)."
+    worker_user_args=(--user "$worker_ug")
+  fi
   RUN_LOG_DIR="$LOG_DIR/run-$(date -u +%Y%m%dT%H%M%SZ)-$$-$ATTEMPT"
   log "Ranks:"
   show_ranks
@@ -292,6 +302,11 @@ launch() {
     ln -sfn -- "$RUN_LOG_DIR" "$LOG_DIR/current"
     wssh mkdir -p "$WORKER_CACHE_DIR/home" "$WORKER_STATE_DIR" \
       || fail E_START "Could not create $WORKER_CACHE_DIR on $(worker_host)."
+    # With different ids, a folder an earlier rank made in its HOME under this Spark's ids stops rank 1 with only AccessDenied.
+    if [[ -n "$worker_ug" && "$worker_ug" != "$CONTAINER_USER" ]]; then
+      unwritable=$(wssh find "$WORKER_CACHE_DIR/home" -type d ! -writable -print -quit 2>/dev/null) || true
+      [[ -z "$unwritable" ]] || fail E_WORKER "$unwritable on $(worker_host) is not writable by the login rank 1 runs as ($worker_ug). Give $WORKER_CACHE_DIR/home to that login: sudo chown -R $worker_ug $WORKER_CACHE_DIR/home"
+    fi
     [[ -z "$TEMPLATE_FILE" ]] || wssh tee "$WORKER_TEMPLATE" < "$TEMPLATE_FILE" >/dev/null \
       || fail E_START "Could not place the chat template on $(worker_host)."
   fi
@@ -308,7 +323,7 @@ launch() {
   done
   [[ -z "$WORKER_ENV_FILE" ]] || worker_env+=(--env-file "$WORKER_ENV_FILE")
   wcmd=(docker run -d --name "$CONTAINER_NAME" --label tf.recipe=glm53-spark --label "tf.patches=$PATCHES_HASH"
-    --init --restart=no "${RUN_ARGS[@]}" "${user_args[@]}" "${worker_env[@]}" "${RANK_ENV[@]}"
+    --init --restart=no "${RUN_ARGS[@]}" "${worker_user_args[@]}" "${worker_env[@]}" "${RANK_ENV[@]}"
     "${WORKER_MOUNTS[@]}" -v "$WORKER_CACHE_DIR:/state")
   [[ -z "$TEMPLATE_FILE" ]] || wcmd+=(-v "$WORKER_TEMPLATE:/templates/chat_template.jinja:ro")
   wcmd+=(--entrypoint "$TF_BIN" "$IMAGE" serve /model "${SERVE_ARGS[@]}")

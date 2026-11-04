@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-11-04** -- `start.sh` runs rank 1 as the worker's own login when `CONTAINER_USER` is this Spark's (the default), as
+  `scripts/tp4.sh` already does. With different ids on the two Sparks (uid 1000 and 1001 on ours), rank 1 could not write
+  to its state folder and stopped at `hashing the checkpoint failed at model-00001-of-00083.safetensors` with
+  `AccessDenied`. Equal ids, root and another `CONTAINER_USER` run as before; a `CONTAINER_USER` set to this Spark's own ids
+  counts as the default, as in `tp4.sh`. With different ids the start stops, with the fix, when a folder in rank 1's `HOME`
+  (`WORKER_CACHE_DIR/home`) is not writable by that login, which a workaround that let an earlier rank write there can leave
+  behind. A worker reading shards only the head's id can read (mode 0600 over NFS without `all_squash`) now needs shards its
+  login can read.
 - **2026-11-04** -- CREDITS and NOTICE: the Aevonix entry removed. On reflection it earns no line here: the serving scripts are
   this lab's own (Aevonix's recipe reworked the lab's GLM-5.3-Flash-EXL3-4x-DGX-Sparks-TensorFold scripts, and this recipe's
   copies reach it through the lab's 2x RTX PRO 6000 recipe), the banner was never theirs, and the lab's own 2x RTX PRO 6000
