@@ -20,7 +20,8 @@
 This recipe serves GLM-5.3-Flash from an EXL3 checkpoint on **two NVIDIA DGX Sparks** (GB10, 128 GB unified memory
 each) at tensor parallel 2, one rank on each Spark, over their ConnectX-7 link. It uses TensorFold's native Zig/CUDA
 server (`tensorfold-native`) built in Docker for `sm_121`. The default checkpoint is the pinned 4 bpw EXL3 quant,
-downloaded on the first start and mounted read-only. Rank 0 serves the OpenAI-compatible API; rank 1 follows its steps.
+downloaded on the first start and mounted read-only. The pair's KV pool holds about 2M tokens in total (fp8 on shared
+pages, 12.5 GiB on each rank). Rank 0 serves the OpenAI-compatible API; rank 1 follows its steps.
 
 ```sh
 ./start.sh            # check both Sparks, build the image once, send it to the worker, check the weights, start both ranks, smoke-test
