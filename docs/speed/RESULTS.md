@@ -1482,3 +1482,70 @@ lane upstream now releases deferred around its trace is left decoding on this st
 on streams that cannot start; 0104 added the fill-queue yield checks), so every round carries a ghost stream. Not
 pursued further: the leak it fixes needs a failed trace, which the pair has never logged. 0106 stays in candidates as
 a record; the recipe is back at 105 patches; spark1's build tree likewise.
+
+## TP=4 on the four-Spark ring: the launcher, the first two boots, Codex's read, 0106 pre-registered (2026-11-04, 16:00-19:30 local)
+
+**The ask.** Pair A stopped (16:17 local; stop.sh archived its logs), the recipe cloned to spark1 as
+`~/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig` (mia's login), and a `start-tp4.sh` that serves on
+spark1 (rank 0) with spark2, spark3, spark4 as ranks 1-3, every rank reading the weights from spark1. The kit is cabled as
+a ring without a switch (spark1-spark2 10.0.22.x, spark2-spark3 10.0.33.x, spark3-spark4 10.0.34.x, spark4-spark1
+10.0.41.x; a port and its PCIe twin at .N/.10N; 10.0.0.N aliases on lo routed over the cables; the LAN on enP7s7).
+The "ideas" source: the lab's own TensorFold recipe on spark1 (`~/newMod/GLM-5.3-Flash-EXL3-TensorFold`,
+start-tp4-switchless.sh + scripts/nodes.sh), which ran TP=4 on this ring with v1.0.7 and its own ring patches.
+
+**What was built** (commit 2ff267a, then 75323f1): `scripts/tp4.sh` (ring discovery from each Spark's ConnectX-7
+addresses, NCCL graph files per rank with channels on the devices toward the previous rank, NCCL_ALGO=Ring,
+NCCL_CROSS_NIC=1, NCCL_IB_SUBNET_AWARE_ROUTING=1, NCCL_IB_SUBNET_PREFIX_LEN=26, no NIC fusion / P2P / SHM, image shipping
+to the three workers, NFS volumes per worker from the head's address on that worker's route, a memory guard over four),
+`start-tp4.sh` (start.sh's flow for four ranks; TF_GLM_PREFILL_REDUCE=gather, TF_ROCE=0, NCCL_COMM_ID on what spark1's
+name resolves to, 10.0.0.1) and `stop-tp4.sh`. config.sh gains the four-Spark settings; prepare.sh validates them only
+under start-tp4.sh (TP=2 unchanged). Weights: spark1's Hub snapshot 078455ff is byte-identical to the pin 76c0b517 in
+every shard and config file (checked against spark3's served copy; the commits between them touch the model card and
+licenses), so a flat hard-linked dir `~/.cache/huggingface/glm53-1104/{model,dflash2}` inside the directory spark1's
+ablit-nfs container already exports as `/huggingface` serves rank 0 locally and the workers over NFS
+(NFS_MODEL_PATH=/huggingface/glm53-1104/model; spark3, across the ring, mounts 10.0.0.1 through spark2). Image
+d3acd712b31c shipped to spark2 (spark3/4 had it). DRY_RUN on spark1 found the ring in rank order, GID 3 on every device,
+prefix 26, and the right devices per direction.
+
+**Boot 1 (16:34 local, 105 patches):** all four ranks up to NCCL; rank 2 (spark3) `ncclCommInitRank: unhandled system
+error`, rank 0 `rank 2 stopped (ncclCommInitRank)`, 91 s in. **Boot 2 with NCCL_DEBUG=INFO:** the rings are right
+(`Ring 00 : 3 -> 0 -> 1`, `1 -> 2 -> 3`; subnet-aware routing moves each send onto the next rank's /26), but NCCL's
+tree for four ranks is `Tree 0 : -1 -> 0 -> 2`, and the engine sets NCCL_RUNTIME_CONNECT=0 (cuda_native.zig:205, so a
+full GB10 never registers a channel late), which connects every algorithm's channels at init regardless of
+NCCL_ALGO: `ibv_modify_qp failed with 110 Connection timed out ... local GID ::ffff:10.0.41.1, remote GID
+::ffff:10.0.33.3` (rank 0's port toward spark4 trying to reach spark3), 35 retries, then the error.
+
+**Codex (gpt-6.1, xhigh, read-only over the engine tree + the 105 patches; docs/speed/codex-tp4.md):** it named the
+same two blockers and one I had not: (1) `warmPeers` (cuda_native.zig:138) posts a 4 MiB send+recv to EVERY rank
+before the weights load, so even with the trees out of the way the two ranks across the ring would be connected; its
+least-risk shape is mode-aware (split: every peer; ring: send next / receive previous; gather: no p2p, the rings connect
+at the first collective), not "warm and ignore failures"; (2) the eager connect above - NCCL 2.30.7's eager branch
+connects rings, trees and PAT, so NCCL_RUNTIME_CONNECT=1 with NCCL_CUMEM_ENABLE=1 (host cuMem buffers still off) is the
+experiment; (3) the rest of the GLM family and the 105 patches hold no other all-pairs p2p at world 4 (0034's p2p and
+0035/0063's copy-engine exchange are guarded out; 0051's "pair" is two prompt chunks; "TP3" in 0033/0063/0065 are test
+fixtures covering worlds 1-8); DFlash2 splits its MLP only at world 2 (full MLP per rank at four, more replicated
+work); (4) broadcasts from non-zero roots are fine under Ring; subnet-aware routing applies to p2p too but "retains the
+default device" when no subnet matches, so it never repairs a cross-ring choice; (5) the lo alias 10.0.0.1 works as
+NCCL_COMM_ID (the explicit-COMM_ID matcher does not exclude lo), the LAN address would be the simpler choice;
+tp_watch wants a literal IPv4; (6) memory: 6,380 KV bytes a token a rank at any TP, one 1M window 2,049 pages = 6.23
+GiB, eight windows + seven fixed parts ~51.0 GiB of the limiting rank's room; with ~55 GiB more room than TP=2 expect
+eight windows and the full 16 GiB default prompt cache; there is no ninth-window cliff at --parallel 8; (7) TP=2's
+token_sha is not a TP=4 acceptance gate (different partitioning, different fp grouping) - use a TP=4 greedy, draft-off,
+cache-cold baseline and require repeatability, draft on/off equality, solo/concurrent equality.
+
+**Decision:** both of Codex's fixes, as it shaped them. Launcher (75323f1): NCCL_RUNTIME_CONNECT=1,
+NCCL_CUMEM_ENABLE=1, NCCL_CUMEM_HOST_ENABLE=0 on every rank. Engine candidate **0106**
+(docs/speed/candidates/0106-glm-cuda-the-start-s-peer-warm-up-follows-the-prefil.patch; the killed lane fix that
+carried the number 0106 earlier today stays in candidates as a record and never entered the recipe): warmPeers takes
+the rank Settings; `!set.split` returns before any posting; ring posts send(next) and recv(prev) only; split is
+unchanged. Built on spark1 as image **daa6f2cde063** (106 patches, ~7 min); cold host tests on spark5
+(docs/speed/tp4/hosttest-0106.log).
+
+**Pre-registered gates for boot 3 (image daa6f2cde063, gather, reserve 12, PARALLEL=8, CONTEXT=auto):**
+- GO-1 (boot): all four ranks reach the API and the smoke passes; the four NCCL logs show no `ibv_modify_qp` retry
+  and no QP toward a GID off the rank's two cables; rank 0's startup line names 8 streams, the pages and a prompt
+  cache above 0 with no "cannot keep one state".
+- GO-2 (quality, from spark5's harness): acc.py greedy run twice gives the same token_sha each time; `draft: false`
+  on the same prompts gives the same tokens; the 4-stream contract hashes equal the 1-stream ones.
+- KILL: a rank that fails to start, any cross-ring QP, a smoke answer that is garbage, or a token_sha that differs
+  between two greedy runs. Speed is recorded, not gated (no TP=4 band exists yet; TP=2 is 38.4 / 56.6 at one stream).
