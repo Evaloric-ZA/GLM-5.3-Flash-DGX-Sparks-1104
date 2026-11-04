@@ -301,7 +301,7 @@ launch() {
     mkdir -p "$RUN_LOG_DIR" "$CACHE_DIR/home"
     ln -sfn -- "$RUN_LOG_DIR" "$LOG_DIR/current"
     wssh mkdir -p "$WORKER_CACHE_DIR/home" "$WORKER_STATE_DIR" \
-      || fail E_START "Could not create $WORKER_CACHE_DIR on $(worker_host)."
+      || fail E_START "Could not create $WORKER_CACHE_DIR on $(worker_host). It defaults to this Spark's home; when the logins differ, set WORKER_CACHE_DIR to a path under $(worker_host)'s own home in local.sh."
     # With different ids, a folder an earlier rank made in its HOME under this Spark's ids stops rank 1 with only AccessDenied.
     if [[ -n "$worker_ug" && "$worker_ug" != "$CONTAINER_USER" ]]; then
       unwritable=$(wssh find "$WORKER_CACHE_DIR/home" -type d ! -writable -print -quit 2>/dev/null) || true

@@ -184,6 +184,22 @@ check_platform() {
   nvidia_docker_ready worker || fail E_WORKER "$(worker_host) cannot give a container the GPU: no nvidia runtime registered and no NVIDIA Container Toolkit hook. Install NVIDIA Container Toolkit there."
   wname=$(wssh hostname 2>/dev/null || echo "$(worker_host)")
   log "[I_WORKER] $wname reachable over ssh, aarch64, Docker with the NVIDIA runtime."
+  worker_home_defaults
+}
+
+# The state defaults live under this Spark's home (config.sh's DATA_DIR). On a pair whose logins differ, that home is
+# not the worker's, and the worker cannot create the path (issue 3: acer-spark here, nvidia there). Re-root the
+# untouched defaults under the login that runs there. An explicit WORKER_CACHE_DIR, DATA_DIR or CACHE_DIR wins.
+worker_home_defaults() {
+  local whome old=$WORKER_CACHE_DIR
+  whome=$(wsh 'printf "%s\n" "${HOME:-}"' 2>/dev/null) || return 0
+  [[ -n "$whome" && "$whome" != "$HOME" ]] || return 0
+  [[ "$DATA_DIR" == "${XDG_CACHE_HOME:-$HOME/.cache}/aevonix-glm53" && "$CACHE_DIR" == "$DATA_DIR/zig-home" \
+    && "$WORKER_CACHE_DIR" == "$CACHE_DIR" && "$WORKER_CACHE_DIR" == "$HOME"/* ]] || return 0
+  WORKER_CACHE_DIR="$whome${WORKER_CACHE_DIR#"$HOME"}"
+  [[ "$WORKER_STATE_DIR" == "$old/state" ]] && WORKER_STATE_DIR="$WORKER_CACHE_DIR/state"
+  [[ "$WORKER_OVERLAY" == "$old/state/model-config.json" ]] && WORKER_OVERLAY="$WORKER_CACHE_DIR/state/model-config.json"
+  log "[I_WORKER] The logins differ ($whome there, $HOME here): the worker's state defaults to $WORKER_CACHE_DIR."
 }
 
 # One GB10 a Spark. nvidia-smi on GB10 answers [N/A] for memory.total, memory.used and memory.free and lists no

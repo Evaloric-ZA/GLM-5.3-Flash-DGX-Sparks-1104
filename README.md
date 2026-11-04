@@ -167,7 +167,7 @@ variables. **The served pair's `local.sh`** sets `PORT=8888`, `PARALLEL=8`, `CON
 | `ROCE`, `ROCE_MAX_KB` | `on`, `4096` | The engine's one-shot RDMA all-gathers, and the largest shard they carry; `off` puts everything on NCCL |
 | `PORT`, `HOST`, `NCCL_PORT` | `8020`, `0.0.0.0`, `29583` | The API address; rank 0's bootstrap port on the link (the watch line uses the next one) |
 | `WORKER_WEIGHTS` | `rsync` | `rsync` the checkpoint over the link, `nfs` (the worker mounts it; `NFS_*` settings), or `check` (refuse unless present) |
-| `WORKER_MODEL_DIR`, `WORKER_DFLASH2_DIR`, `WORKER_CACHE_DIR` | the same paths | Where the worker keeps them |
+| `WORKER_MODEL_DIR`, `WORKER_DFLASH2_DIR`, `WORKER_CACHE_DIR` | the same paths | Where the worker keeps them; the home-based defaults re-root on the worker's own home when the two logins differ |
 | `SSH_OPTS` | `-o BatchMode=yes -o ConnectTimeout=10` | For every call to the worker |
 
 ### Weights and serving
