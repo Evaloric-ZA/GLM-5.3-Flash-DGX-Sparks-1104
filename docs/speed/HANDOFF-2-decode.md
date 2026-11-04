@@ -32,6 +32,15 @@ The calibration study bounds cut-tuning at ~84; Codex-checked arithmetic: 93 nee
 B's exact tpr on A's latency gives 89.2. KDA C1/C4 add +1-2 ms (82-84 ceiling). The campaign's stop rules fired
 on their pre-registered gates; this is a measured verdict, not a guess.
 
+## TP=4 (2026-11-04 evening): pair A is DOWN by the user's choice; spark1 serves all four Sparks
+
+`./start-tp4.sh` on spark1 (rank 0, port 8888; spark2/spark3/spark4 ranks 1-3 round the switchless ring; weights from
+spark1 over NFS) is LIVE on image `daa6f2cde063` (106 patches: 0106 = the mode-aware peer warm-up). RESULTS.md
+"TP=4 on the four-Spark ring" has the whole story: the four boots, Codex's read, the NCCL eager-connect and the
+follower environ panic, the LAN bootstrap. Stop it with `./stop-tp4.sh` on spark1; pair A restarts with `./start.sh`
+on spark3 (its local.sh untouched) once the four ranks are down. Check rank 0's startup line after every TP=4 start:
+"16392 pages", "prompt cache: 3.6 GiB", no "cannot keep one state".
+
 ## What shipped (all exact, on image `cd1de29726c3`, both Sparks; **superseded 2026-11-04 13:20 by image `1fdae27149cc` (104 patches: 0103 tool-parse fix, 0104 warm turns, both ported from the rtx recipe, plus MEMORY_RESERVE_GIB 9.5 in scripts/local.sh) and at 15:10 by `8c4ca7bd8c39` (105 patches: 0105, untyped tool parameters decode as the JSON object the model wrote - the sibling recipe's issue #180) - RESULTS.md 2026-11-04 12:00, 13:20 and 15:30 sections; A serves 8c4ca7bd8c39 now (an upstream lane fix tried as 0106 at 15:30 was killed: rounds 50% longer, a ghost stream; RESULTS.md). Pair B (spark1+2) was STOPPED by the user at 13:35 after the Python-engine comparison and is down.**)
 
 - **PARALLEL=8** in scripts/local.sh: the 8-stream arena. Free at every served shape; 6 streams 91-94, 8 streams

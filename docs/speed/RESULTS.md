@@ -1566,3 +1566,14 @@ follower keeps NCCL_COMM_ID and NCCL picks its bootstrap interface by that subne
 after start is unsafe under Zig 0.17's std) is noted for upstream, not patched here. The lab's DeepSeek 4x recipe,
 checked on the user's pointer, runs the same ring design (graph files, Ring-only, /26, NFS from spark1) on a different
 engine family whose own rendezvous never unsets NCCL_COMM_ID.
+
+**Boot 5 (image daa6f2cde063 = 106 patches, LAN bootstrap, 19:22 local): GO-1 met.** All four ranks up, loaded in
+125.6 s (the workers' digests over NFS 40-45 s each), smoke "ready". Every rank's NCCL report names exactly its two
+neighbours (`rank 0 NET/IB (4 connections); rank 2 NET/IB (4 connections)` on rank 1, and so round the ring): nothing
+crosses the ring. Rank 0's startup line: model 45.61 GiB a rank; 8 streams, 16,392 pages of 512 rows (49.87 GiB, eight
+1M windows, as Codex computed) of 55.8 GiB left after the 12 GiB reserve, 331 MiB fixed a stream, a **3.6 GiB prompt
+cache** a rank, no "cannot keep one state". KV pool 8,392,704 tokens shared by 8 streams, one request up to
+1,048,576. Available memory with the server idle: spark1 12.4 GiB, spark2 14.5, spark3 12.2, spark4 14.5 (the
+memguard floor is 2.5). Settings on spark1 (scripts/local.sh, untracked): PARALLEL=8, CONTEXT=auto (1,048,576 fit
+first try), KV=fp8, DENSE=q8, HEAD=q8, ABSORB_MMA=1, HOST_CACHE_GIB=0, MEMORY_RESERVE_GIB=12, WORKER_WEIGHTS=nfs,
+NFS_MODEL_PATH=/huggingface/glm53-1104/model, MODEL_REVISION=078455ff (byte-identical to the pin), PORT=8888.
