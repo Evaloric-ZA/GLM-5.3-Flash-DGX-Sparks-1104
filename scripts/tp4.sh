@@ -336,12 +336,18 @@ graph_xml() {
 # network every Spark shares; every RoCE device toward a neighbour; NCCL_ALGO=Ring with the graph file; crossnic and
 # subnet-aware routing (each cable joins port 0 of one Spark to port 1 of the next); no NIC fusion, no P2P or SHM
 # transport (one GPU a node); the prefix that keeps a port and its PCIe twin apart so both carry traffic.
+# NCCL_RUNTIME_CONNECT=1: the engine otherwise asks NCCL to connect every algorithm's channels at init (so a full GB10
+# never registers them later), and NCCL's tree for four ranks joins rank 0 to rank 2, which no cable reaches: measured
+# here 2026-11-04, ncclCommInitRank timed out in ibv_modify_qp toward the Spark across the ring. Connected at first use,
+# only the ring's channels are ever made (NCCL_ALGO=Ring), at the ranks' first all-gather, before the weights load.
+# NCCL needs cuMem for that (NCCL_CUMEM_ENABLE=1); the host-side cuMem buffers stay off as the engine sets them.
 tp4_rank_env() {
   local r=$1
   RANK_ENV=(-e "TF_GLM_RANK=$r" -e "NCCL_SOCKET_IFNAME=${NODE_DEV[r]}" -e "NCCL_IB_HCA=${NODE_HCAS[r]}")
   [[ -z "${NODE_GID[r]}" ]] || RANK_ENV+=(-e "NCCL_IB_GID_INDEX=${NODE_GID[r]}")
   RANK_ENV+=(-e "NCCL_ALGO=$RING_NCCL_ALGO" -e NCCL_GRAPH_FILE=/nccl-graph.xml -e NCCL_CROSS_NIC=1 -e NCCL_IB_SUBNET_AWARE_ROUTING=1
              -e NCCL_P2P_DISABLE=1 -e NCCL_SHM_DISABLE=1 -e NCCL_IB_MERGE_NICS=0
+             -e NCCL_RUNTIME_CONNECT=1 -e NCCL_CUMEM_ENABLE=1 -e NCCL_CUMEM_HOST_ENABLE=0
              -e "NCCL_MIN_NCHANNELS=$NCCL_CHANNELS" -e "NCCL_MAX_NCHANNELS=$NCCL_CHANNELS")
   [[ -z "$RING_PREFIX" ]] || RANK_ENV+=(-e "NCCL_IB_SUBNET_PREFIX_LEN=$RING_PREFIX")
   RANK_MOUNTS=(-v "${NODE_GRAPH[r]}:/nccl-graph.xml:ro")
