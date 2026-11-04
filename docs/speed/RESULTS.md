@@ -1493,7 +1493,7 @@ a ring without a switch (spark1-spark2 10.0.22.x, spark2-spark3 10.0.33.x, spark
 The "ideas" source: the lab's own TensorFold recipe on spark1 (`~/newMod/GLM-5.3-Flash-EXL3-TensorFold`,
 start-tp4-switchless.sh + scripts/nodes.sh), which ran TP=4 on this ring with v1.0.7 and its own ring patches.
 
-**What was built** (commit 2ff267a, then 75323f1): `scripts/tp4.sh` (ring discovery from each Spark's ConnectX-7
+**What was built** (commit e7ae4ef, then 349b9f7): `scripts/tp4.sh` (ring discovery from each Spark's ConnectX-7
 addresses, NCCL graph files per rank with channels on the devices toward the previous rank, NCCL_ALGO=Ring,
 NCCL_CROSS_NIC=1, NCCL_IB_SUBNET_AWARE_ROUTING=1, NCCL_IB_SUBNET_PREFIX_LEN=26, no NIC fusion / P2P / SHM, image shipping
 to the three workers, NFS volumes per worker from the head's address on that worker's route, a memory guard over four),
@@ -1533,7 +1533,7 @@ eight windows and the full 16 GiB default prompt cache; there is no ninth-window
 token_sha is not a TP=4 acceptance gate (different partitioning, different fp grouping) - use a TP=4 greedy, draft-off,
 cache-cold baseline and require repeatability, draft on/off equality, solo/concurrent equality.
 
-**Decision:** both of Codex's fixes, as it shaped them. Launcher (75323f1): NCCL_RUNTIME_CONNECT=1,
+**Decision:** both of Codex's fixes, as it shaped them. Launcher (349b9f7): NCCL_RUNTIME_CONNECT=1,
 NCCL_CUMEM_ENABLE=1, NCCL_CUMEM_HOST_ENABLE=0 on every rank. Engine candidate **0106**
 (docs/speed/candidates/0106-glm-cuda-the-start-s-peer-warm-up-follows-the-prefil.patch; the killed lane fix that
 carried the number 0106 earlier today stays in candidates as a record and never entered the recipe): warmPeers takes

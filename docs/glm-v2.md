@@ -14,7 +14,7 @@ record; items v1 got wrong are corrected in §3 rather than quietly dropped.
 | Source | What it gave |
 | --- | --- |
 | `docs/handoff.md` | production state, measured numbers, user decisions, house rules |
-| `docs/glm.md`, `docs/deepseek.md`, `docs/overnight-plan.md` | v1 analysis and its corrections; the night's plan |
+| `docs/glm.md`, `docs/deepseek.md` | v1 analysis and its corrections |
 | `opt-sm120-notes/opt/overnight/REPORT.md` (read via shell, read-only) | the night's verdicts: what shipped, what was measured and dropped, with numbers |
 | `opt-sm120-notes/opt/overnight/prof5/profile5.md` | the fresh profile: per-category step tables, NCU DRAM counters, idle-gap analysis, L6/L7/T6 |
 | `opt-sm120-notes/opt/overnight/{pdl5,glue5,exl3r,exl3p,attn5,graph5,integ5}.md`, `integ5/SHIP.md` | per-candidate kernels, exactness gates, off switches, left-open items |

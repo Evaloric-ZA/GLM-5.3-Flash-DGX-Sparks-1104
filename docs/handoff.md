@@ -24,7 +24,7 @@ Everything runs locally on host `rtx` (the 2× RTX PRO 6000 workstation). The on
 | Engine patches | `patches/engine/0001`–`0091` in the recipe |
 | Plan, rules, reports (waves 1-3) | `/home/zurih/MiaAI_Lab/TensorFold/opt-sm120-notes/` (`PLAN.md`, `WAVE2-RULES.md`, `opt/*.md`) |
 | The 2026-10-31 night | `opt-sm120-notes/opt/overnight/`: `REPORT.md` (results), `STATE.md` (main's log), `calendar.md`, `slots.log`, per-agent `<agent>.md`, `integ5/SHIP.md` (patch list, switches, rollback) |
-| Night plan and its inputs | `docs/overnight-plan.md`, `docs/glm.md`, `docs/deepseek.md` in the recipe |
+| Night plan inputs | `docs/glm.md`, `docs/deepseek.md` in the recipe |
 | Patch series by wave | `opt-sm120-notes/opt/wave2-patches/integ/` (0026–0063), `integ2/` (0064–0066), `opt/overnight/patches/integ5/` (0067–0091; the measured variant in `measured-s5/`) |
 | Engine worktrees (37) | `/home/zurih/MiaAI_Lab/TensorFold/tensorfold-wt-*`; the night's are `tensorfold-wt-n1-*` (uncommitted) |
 | Night binaries (~14 GB) | `/home/zurih/MiaAI_Lab/TensorFold/toolchain/install/tensorfold-opt-n1-*`; the final engine is `-integ5-s5e` |
