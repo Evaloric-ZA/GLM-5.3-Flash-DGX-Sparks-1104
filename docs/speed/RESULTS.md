@@ -1549,3 +1549,20 @@ unchanged. Built on spark1 as image **daa6f2cde063** (106 patches, ~7 min); cold
   on the same prompts gives the same tokens; the 4-stream contract hashes equal the 1-stream ones.
 - KILL: a rank that fails to start, any cross-ring QP, a smoke answer that is garbage, or a token_sha that differs
   between two greedy runs. Speed is recorded, not gated (no TP=4 band exists yet; TP=2 is 38.4 / 56.6 at one stream).
+
+**Boots 3 and 4 (image daa6f2cde063, 17:00-18:15 local):** past NCCL init (no cross-ring QP: the trees are never
+connected under NCCL_RUNTIME_CONNECT=1), rank 0 hashed the checkpoint in 44.7 s, but all three workers stopped three
+seconds in with `thread N panic: attempt to use null value` and no trace (the panic handler hung). Bisected on the
+spark3+spark4 pair with the same image: NFS weights alone fine (spark4 read the 163.6 GiB from spark1 in 41.9 s),
+gather + TF_ROCE=0 fine, the ring/routing NCCL knobs fine, **NCCL_RUNTIME_CONNECT=1 + NCCL_CUMEM_ENABLE=1 reproduce
+it on the follower**. gdb inside that container (every thread's backtrace, docs/speed/tp4/gdb-follower.txt): the
+follower's main thread is in Zig's standard library, `Io.Threaded.Environ.scan` under `lockStderr` from the first
+`std.log` after NCCL init (`p2p_report.logSink`), unwrapping a null entry of the process environment. The engine's
+follower had just called `unsetenv("NCCL_COMM_ID")` (cuda_native.zig:210, when NCCL_SOCKET_IFNAME is set), which
+shortens libc's environ under the std library's fixed-length view of it; with eager connect the first stderr lock
+happened earlier and never saw it. Launcher fix (b9e87c2), no rebuild: NCCL_COMM_ID on spark1's LAN address
+(192.168.1.143, what the default route leaves with; Codex's choice too) and NCCL_SOCKET_IFNAME to rank 0 only, so a
+follower keeps NCCL_COMM_ID and NCCL picks its bootstrap interface by that subnet. The engine-side bug (an unsetenv
+after start is unsafe under Zig 0.17's std) is noted for upstream, not patched here. The lab's DeepSeek 4x recipe,
+checked on the user's pointer, runs the same ring design (graph files, Ring-only, /26, NFS from spark1) on a different
+engine family whose own rendezvous never unsets NCCL_COMM_ID.
