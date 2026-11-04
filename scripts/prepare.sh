@@ -71,9 +71,27 @@ validate_config() {
   [[ "$WORKER_WEIGHTS" =~ ^(rsync|nfs|check)$ ]] || fail E_CONFIG 'WORKER_WEIGHTS must be rsync, nfs or check.'
   [[ -z "$PROMPT_CACHE_GIB" ]] || is_number "$PROMPT_CACHE_GIB" || fail E_CONFIG 'PROMPT_CACHE_GIB must be empty or a number of GiB (0: none).'
   [[ "$CONFIG_OVERLAY" =~ ^(auto|0)$ ]] || fail E_CONFIG 'CONFIG_OVERLAY must be auto or 0.'
-  [[ "$TP" == 2 ]] || fail E_CONFIG "TP=$TP: this recipe wires two Sparks. The engine places a third rank the same way, but the NCCL graph files and the uneven TP=3 head split are not set up here."
-  [[ -n "$WORKER" ]] || fail E_CONFIG 'WORKER is empty: set it to the second Spark'"'"'s ssh target (e.g. WORKER=zurih@10.0.34.4) in scripts/local.sh.'
-  [[ "$WORKER" =~ ^[A-Za-z0-9_.@:-]+$ ]] || fail E_CONFIG 'WORKER must be an ssh target such as user@host, with no spaces.'
+  if [[ "${GLM_TP4:-0}" == 1 ]]; then
+    [[ "$TP" == 4 ]] || fail E_CONFIG "TP=$TP: ./start-tp4.sh runs four Sparks (TP=4); ./start.sh runs two."
+    for key in WORKER WORKER2 WORKER3; do
+      [[ -n "${!key}" ]] || fail E_CONFIG "$key is empty: set WORKER, WORKER2 and WORKER3 to the other three Sparks' ssh targets, in the ring's order from this Spark, in scripts/local.sh."
+      [[ "${!key}" =~ ^[A-Za-z0-9_.@:-]+$ ]] || fail E_CONFIG "$key must be an ssh target such as user@host, with no spaces."
+    done
+    [[ "$WORKER" != "$WORKER2" && "$WORKER" != "$WORKER3" && "$WORKER2" != "$WORKER3" ]] || fail E_CONFIG 'WORKER, WORKER2 and WORKER3 must name three different Sparks.'
+    [[ "$PREFILL_REDUCE" =~ ^(gather|ring)$ ]] || fail E_CONFIG 'PREFILL_REDUCE must be gather or ring (TF_GLM_PREFILL_REDUCE on a ring; split cannot run there).'
+    [[ "$RING_NCCL_ALGO" =~ ^[A-Za-z,^]+$ ]] || fail E_CONFIG 'RING_NCCL_ALGO must be an NCCL_ALGO value (Ring).'
+    for key in MASTER_ADDR SOCKET_IFNAME NFS_SERVER1 NFS_SERVER2 NFS_SERVER3; do
+      [[ -z "${!key}" || "${!key}" =~ ^[A-Za-z0-9.:_-]+$ ]] || fail E_CONFIG "$key must be an address, host name or netdev."
+    done
+    for key in NFS_MODEL_PATH NFS_DFLASH2_PATH; do
+      [[ -z "${!key}" || ( "${!key}" == /* && "${!key}" != *:* && "${!key}" != *,* ) ]] || fail E_CONFIG "$key must be an absolute path without colons or commas."
+    done
+    [[ "$WORKER_WEIGHTS" =~ ^(nfs|check)$ ]] || fail E_CONFIG 'WORKER_WEIGHTS must be nfs or check at four Sparks (rsync is not offered there).'
+  else
+    [[ "$TP" == 2 ]] || fail E_CONFIG "TP=$TP: ./start.sh wires two Sparks; four cabled as a ring start with ./start-tp4.sh (README \"4 Sparks\")."
+    [[ -n "$WORKER" ]] || fail E_CONFIG 'WORKER is empty: set it to the second Spark'"'"'s ssh target (e.g. WORKER=zurih@10.0.34.4) in scripts/local.sh.'
+    [[ "$WORKER" =~ ^[A-Za-z0-9_.@:-]+$ ]] || fail E_CONFIG 'WORKER must be an ssh target such as user@host, with no spaces.'
+  fi
   for key in FABRIC_PEER FABRIC_SELF NFS_SERVER; do
     [[ -z "${!key}" || "${!key}" =~ ^[A-Za-z0-9.:_-]+$ ]] || fail E_CONFIG "$key must be an address or host name."
   done
