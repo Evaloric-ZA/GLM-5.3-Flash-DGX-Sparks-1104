@@ -1,0 +1,848 @@
+### leg cut040  2026-11-02T23:15:16Z
+  set TF_GLM_DRAFT_CONFIDENCE=0.40
+--- restart ---
+GLM-5.3-Flash EXL3 | TensorFold native engine (Zig) | by Mia's AI Lab
+TensorFold f350cd3e + 97 engine patches | 2x DGX Spark (GB10, sm_121), tensor parallel 2 | API :8888
+
+model: EXL3 4-bit experts, mcg codebook, vision
+4 at once | context 1048576 (auto: try 1048576, then once the largest window the engine's memory refusal allows)
+q8 dense, bf16 head, fp8 (one shared page pool; context = one request's cap) KV | dflash2 drafts | vision 1 | reserve 8 GiB | port 8888
+rank 0 here, rank 1 on 10.0.34.4 | RoCE on
+
+[1/6] Check both Sparks: Linux aarch64, Docker, the NVIDIA runtime, memory, disk and ports
+[I_PLATFORM] Linux aarch64, Docker access and GPU passthrough are ready.
+[I_WORKER] spark4 reachable over ssh, aarch64, Docker with the NVIDIA runtime.
+Stopping rank 0 here (up to 45 s; requests in progress get TF_DRAIN_S to finish).
+Stopping rank 1 on 10.0.34.4.
+Stopped both ranks. Logs saved to /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/logs/glm53-spark-20261102T231521Z-1646570.tar.gz (newest 10 kept).
+[I_GPU] rank 0: GPU 0: NVIDIA GB10.
+[I_GPU] rank 1: GPU 0: NVIDIA GB10 on 10.0.34.4.
+[I_RAM] rank 0: 113.7 GiB available of 121.6 GiB (0.0 GiB of it parked on the per-CPU page lists).
+[I_RAM] rank 1: 116.4 GiB available on 10.0.34.4.
+[I_DISK] Enough disk space on this Spark for what is still missing.
+[I_DISK] 10.0.34.4 has 243 GiB free, about 40 GiB is needed.
+[I_PORT] Port 8888 and 29583-29584 are free.
+
+[2/6] Build the TensorFold native image with 97 engine patches for sm_121, and send it to 10.0.34.4
+Build tensorfold-glm53-spark:42298ca48d80: TensorFold f350cd3ea253 with 97 engine patches, Zig 0.17.0, sm_121.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 13.38kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/nvidia/cuda:13.3.1-runtime-ubuntu24.04
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/nvidia/cuda:13.3.1-devel-ubuntu24.04
+#3 ...
+
+#4 [auth] nvidia/cuda:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/nvidia/cuda:13.3.1-devel-ubuntu24.04
+#3 DONE 1.3s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 257B done
+#5 DONE 0.0s
+
+#6 [toolchain 1/3] FROM docker.io/nvidia/cuda:13.3.1-devel-ubuntu24.04@sha256:4ff859525f99de5782aa73607ce24219b07dddd48d12b97c1c301d7e1cfb0a87
+#6 DONE 0.0s
+
+#7 [toolchain 2/3] RUN apt-get update  && apt-get install -y --no-install-recommends ca-certificates curl git xz-utils cmake nasm libibverbs-dev  && rm -rf /var/lib/apt/lists/*
+#7 CACHED
+
+#8 [toolchain 3/3] RUN test -n "9e8d11661d4ae3bd57702a3832781e23ad151dde5798e16a5ccd503f65234ff8" || { echo "ZIG_SHA256 build arg is required" >&2; exit 1; }  && curl -fsSL --retry 3 -o /tmp/zig.tar.xz "https://ziglang.org/download/0.17.0/zig-aarch64-linux-0.17.0.tar.xz"  && echo "9e8d11661d4ae3bd57702a3832781e23ad151dde5798e16a5ccd503f65234ff8  /tmp/zig.tar.xz" | sha256sum -c -  && mkdir -p /opt/zig  && tar -xJf /tmp/zig.tar.xz -C /opt/zig --strip-components=1  && rm /tmp/zig.tar.xz  && ln -s /opt/zig/zig /usr/local/bin/zig  && test "$(zig version)" = "0.17.0"
+#8 CACHED
+
+#9 [nccl 1/1] RUN mkdir -p /opt/nccl  && if [[ -n "" ]]; then       apt-get update && apt-get install -y --no-install-recommends python3-pip python3-venv       && rm -rf /var/lib/apt/lists/*       && python3 -m venv /tmp/nv       && /tmp/nv/bin/pip install -q --no-cache-dir "nvidia-nccl-cu13=="       && cp -a "$(find /tmp/nv -name 'libnccl.so.2*' -type f | head -1)" /opt/nccl/libnccl.so.2       && ls -l /opt/nccl;     fi
+#9 CACHED
+
+#10 [runtime 1/7] FROM docker.io/nvidia/cuda:13.3.1-runtime-ubuntu24.04
+#10 CACHED
+
+#11 [internal] load build context
+#11 transferring context: 16.67kB done
+#11 DONE 0.0s
+
+#12 [build 2/9] WORKDIR /src/tensorfold
+#12 CACHED
+
+#13 [build 1/9] RUN git clone -q --depth 1 --branch "v0.2.8" --recurse-submodules "https://github.com/mlc-ai/xgrammar.git" /src/xgrammar  && test "$(git -C /src/xgrammar rev-parse HEAD)" = "97787376faee5ed8466cfad57c99855e4ce2f6aa"  && test "$(git -C /src/xgrammar describe --tags --exact-match)" = "v0.2.8"
+#13 CACHED
+
+#14 [codecs 1/3] WORKDIR /build
+#14 CACHED
+
+#15 [codecs 2/3] RUN curl -fsSL --retry 3 -o jpeg.tar.gz       "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.1.4.1/libjpeg-turbo-3.1.4.1.tar.gz"  && echo "ecae8008e2cc9ade2f2c1bb9d5e6d4fb73e7c433866a056bd82980741571a022  jpeg.tar.gz" | sha256sum -c -  && mkdir jpeg && tar -xzf jpeg.tar.gz -C jpeg --strip-components=1  && cmake -S jpeg -B jpeg/out -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/codecs -DCMAKE_INSTALL_LIBDIR=lib       -DENABLE_SHARED=ON -DENABLE_STATIC=OFF -DWITH_TURBOJPEG=ON -DWITH_JAVA=OFF -DWITH_TOOLS=OFF -DWITH_TESTS=OFF  && cmake --build jpeg/out -j"$(nproc)" --target turbojpeg  && install -D -m 0755 "$(readlink -f jpeg/out/libturbojpeg.so.0)" /codecs/lib/libturbojpeg.so.0  && install -D -m 0644 jpeg/LICENSE.md /codecs/LICENSES/libjpeg-turbo-LICENSE.md
+#15 CACHED
+
+#16 [build 3/9] RUN test -n "f350cd3ea253a042e205746928271f9d8f71a82d" || { echo "TF_REF build arg is required" >&2; exit 1; }  && git init -q .  && git remote add origin "https://github.com/ashhart/TensorFold.git"  && git fetch -q --depth 1 origin "f350cd3ea253a042e205746928271f9d8f71a82d"  && git checkout -q --detach FETCH_HEAD  && commit="$(git rev-parse HEAD)"  && if [[ "f350cd3ea253a042e205746928271f9d8f71a82d" =~ ^[0-9a-f]{40}$ ]] && [[ "${commit}" != "f350cd3ea253a042e205746928271f9d8f71a82d" ]]; then       echo "fetched ${commit}, expected f350cd3ea253a042e205746928271f9d8f71a82d" >&2; exit 1; fi  && echo "TensorFold https://github.com/ashhart/TensorFold.git f350cd3ea253a042e205746928271f9d8f71a82d -> ${commit}"
+#16 CACHED
+
+#17 [codecs 3/3] RUN curl -fsSL --retry 3 -o webp.tar.gz       "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.6.0.tar.gz"  && echo "e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564  webp.tar.gz" | sha256sum -c -  && mkdir webp && tar -xzf webp.tar.gz -C webp --strip-components=1  && cmake -S webp -B webp/out -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON       -DWEBP_BUILD_ANIM_UTILS=OFF -DWEBP_BUILD_CWEBP=OFF -DWEBP_BUILD_DWEBP=OFF -DWEBP_BUILD_GIF2WEBP=OFF       -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF -DWEBP_BUILD_WEBPINFO=OFF -DWEBP_BUILD_WEBPMUX=OFF       -DWEBP_BUILD_EXTRAS=OFF -DWEBP_BUILD_LIBWEBPMUX=OFF  && cmake --build webp/out -j"$(nproc)" --target webpdecoder  && install -D -m 0755 "$(readlink -f webp/out/libwebpdecoder.so.3)" /codecs/lib/libwebpdecoder.so.3  && install -D -m 0644 webp/COPYING /codecs/LICENSES/libwebp-COPYING  && ldd /codecs/lib/libturbojpeg.so.0 /codecs/lib/libwebpdecoder.so.3
+#17 CACHED
+
+#18 [build 4/9] COPY patches/engine/ /opt/tf-patches/engine/
+#18 DONE 0.0s
+
+#19 [build 5/9] RUN shopt -s nullglob  && patches=(/opt/tf-patches/engine/*.patch)  && for p in "${patches[@]}"; do       echo "apply ${p##*/}"; git apply --check "${p}" && git apply "${p}" || exit 1;     done  && echo "${#patches[@]} engine patch(es) applied"  && git status --short | sed -n '1,50p'
+#19 0.140 apply 0001-glm-cuda-EXL3-mcg-experts-at-any-whole-bit-width-mix.patch
+#19 0.152 apply 0002-tests-GLM-EXL3-at-mixed-widths-synthetic-and-a-check.patch
+#19 0.156 apply 0003-exl3-cuda-the-common-prompt-kernels-take-3-bit-mcg-g.patch
+#19 0.163 apply 0004-tests-exl3-prompt-k6-the-3-and-4-bit-prompt-kernels-.patch
+#19 0.165 apply 0005-glm-cuda-latent-attention-reads-FP8-key-tiles-in-8-b.patch
+#19 0.169 apply 0006-glm-cuda-a-decode-window-s-shared-expert-on-a-side-s.patch
+#19 0.173 apply 0007-glm-cuda-a-prompt-pass-s-EXL3-experts-in-one-call-wr.patch
+#19 0.178 apply 0008-glm-cuda-no-target-MTP-prompt-pass-beside-a-drafter.patch
+#19 0.182 apply 0009-glm-cuda-packed-prompt-matmuls-in-two-stages-two-blo.patch
+#19 0.186 apply 0010-glm-cuda-the-shared-expert-side-stream-drains-before.patch
+#19 0.189 apply 0011-glm-cuda-the-latent-attention-chunks-256-thread-laun.patch
+#19 0.191 apply 0012-glm-cuda-the-snapshot-budget-leaves-out-target-MTP-r.patch
+#19 0.195 apply 0013-glm-cuda-DFlash2-reads-complete-prompt-taps-at-TP-1.patch
+#19 0.199 apply 0014-glm-cuda-beside-DFlash2-the-target-MTP-layer-its-cac.patch
+#19 0.206 apply 0015-glm-cuda-kept-prompt-states-spill-into-pinned-host-m.patch
+#19 0.214 apply 0016-tests-the-GLM-GPU-checks-take-mem2-s-drafts-option-a.patch
+#19 0.218 apply 0017-glm-cuda-E4M3-latent-cache-kernels-on-KV-pages-paged.patch
+#19 0.220 apply 0018-glm-cuda-E4M3-sequences-on-KV-pages-page-layout-plac.patch
+#19 0.223 apply 0019-glm-cuda-the-KV-pool-says-what-a-held-back-request-w.patch
+#19 0.225 apply 0020-contract-GLM-s-three-E4M3-latent-launches-on-KV-page.patch
+#19 0.228 apply 0021-glm-cuda-E4M3-caches-on-KV-pages-launch-the-_paged-k.patch
+#19 0.232 apply 0022-glm-cuda-a-DSA-block-on-E4M3-pages-keeps-its-sparse-.patch
+#19 0.233 apply 0023-glm-cuda-paged-E4M3-chunks-load-a-dense-chunk-as-the.patch
+#19 0.235 apply 0024-glm-cuda-every-rank-checks-a-stream-s-page-ids-again.patch
+#19 0.238 apply 0025-glm-cuda-pageBytesOf-s-comment-the-pool-s-wait-note-.patch
+#19 0.241 apply 0026-exl3-cuda-the-grouped-experts-kernel-loads-a-tile-ah.patch
+#19 0.246 apply 0027-exl3-cuda-the-grouped-load-ahead-on-sm_120-up-only-b.patch
+#19 0.255 apply 0028-exl3-decode-read-the-trellis-through-ld.global.nc.L1.patch
+#19 0.258 apply 0029-exl3-decode-keep-the-new-comment-to-one-line.patch
+#19 0.260 apply 0030-glm-cuda-a-decode-window-s-MoE-glue-fused-EXL3-decod.patch
+#19 0.266 apply 0031-glm-cuda-the-follower-s-step-in-one-broadcast-rank-0.patch
+#19 0.270 apply 0032-glm-cuda-a-step-the-link-refuses-leaves-rank-0-s-pen.patch
+#19 0.273 apply 0033-tests-GLM-TP3-s-KDA-projections-record-the-f_b-g_b-p.patch
+#19 0.276 apply 0034-glm-cuda-two-ranks-on-one-host-gather-a-window-s-par.patch
+#19 0.281 apply 0035-glm-cuda-TF_GLM_CE_EXCHANGE-1-pushes-a-prompt-chunk-.patch
+#19 0.286 apply 0036-glm-cuda-DFlash2-window-rule-by-expected-tokens-a-ms.patch
+#19 0.289 apply 0037-glm-cuda-a-copy-drafted-round-s-DFlash2-contexts-ing.patch
+#19 0.294 apply 0038-glm-cuda-the-tpm-window-rule-s-seeds-measured-at-sm_.patch
+#19 0.296 apply 0039-glm-cuda-decode-windows-of-16-rows-so-a-context-copy.patch
+#19 0.299 apply 0040-glm-cuda-copy-drafted-rounds-skip-DFlash2-s-block-pa.patch
+#19 0.301 apply 0041-glm-cuda-TF_GLM_ABSORB_MMA-1-a-prompt-s-absorb_q-and.patch
+#19 0.303 /opt/tf-patches/engine/0041-glm-cuda-TF_GLM_ABSORB_MMA-1-a-prompt-s-absorb_q-and.patch:205: new blank line at EOF.
+#19 0.303 +
+#19 0.304 warning: 1 line adds whitespace errors.
+#19 0.304 apply 0042-tests-GLM-s-E4M3-caches-on-KV-pages-through-the-actu.patch
+#19 0.307 apply 0043-glm-cuda-a-begin-that-fails-after-its-step-frees-the.patch
+#19 0.313 apply 0044-native-a-refused-page-plan-names-the-engine-s-own-wi.patch
+#19 0.315 apply 0045-native-beside-GLM-s-host-tier-a-device-prompt-cache-.patch
+#19 0.318 apply 0046-tests-the-exact-context-checks-and-the-smallest-kept.patch
+#19 0.320 apply 0047-tests-the-GLM-mm-policy-and-prompt-workflow-host-fak.patch
+#19 0.322 apply 0048-glm-cuda-a-follower-s-verify-steps-still-read-the-pe.patch
+#19 0.325 apply 0049-glm-cuda-the-lanes-host-checks-move-to-their-own-fil.patch
+#19 0.328 apply 0050-glm-cuda-a-prompt-step-takes-two-chunks-while-no-oth.patch
+#19 0.335 apply 0051-glm-cuda-a-paired-step-takes-rank-0-s-indexer-split-.patch
+#19 0.338 apply 0052-glm-cuda-glm-split-check-takes-the-pair-s-Leader.chu.patch
+#19 0.341 apply 0053-glm-cuda-a-step-pairs-only-where-its-index-rings-reb.patch
+#19 0.345 apply 0054-glm-cuda-only-an-engine-with-other-ranks-makes-the-p.patch
+#19 0.348 apply 0055-glm-cuda-one-table-gives-the-twin-s-fields-their-siz.patch
+#19 0.351 apply 0056-glm-cuda-glm-split-check-s-list-of-prompts-is-descri.patch
+#19 0.354 apply 0057-glm-cuda-paired-prompt-steps-beside-DFlash2-each-chu.patch
+#19 0.358 apply 0058-glm-cuda-TF_GLM_DFLASH2_RING_DIGEST-hashes-a-prompt-.patch
+#19 0.362 apply 0059-glm-cuda-prompts-pair-from-three-chunks-on-TF_GLM_PR.patch
+#19 0.364 apply 0060-tests-glm-pair-check-takes-mem2-s-drafts-option.patch
+#19 0.365 apply 0061-glm-cuda-a-paired-step-s-twin-holds-no-tap-rows-and-.patch
+#19 0.368 apply 0062-tests-glm-pair-check-on-KV-pages-bf16-and-E4M3-and-a.patch
+#19 0.370 apply 0063-glm-cuda-comm3-s-copy-engine-exchange-in-prefill3-s-.patch
+#19 0.372 apply 0064-glm-cuda-TF_GLM_W8A8-1-or-32-packed-8-bit-prompt-lin.patch
+#19 0.375 apply 0065-tests-the-GLM-TP3-KDA-test-s-mm.Kernels-literal-name.patch
+#19 0.377 apply 0066-tests-glm-pair-check-on-whole-windows-reads-no-page-.patch
+#19 0.378 apply 0067-attn5-0067-glm-dsa-decode-select-many-ctas.patch
+#19 0.383 apply 0068-attn5-0068-glm-sparse-attention-in-kernel-merge.patch
+#19 0.386 apply 0069-pdl5-0067-glm-pdl-reduce.patch
+#19 0.388 apply 0070-pdl5-0068-glm-pdl-hc-chain.patch
+#19 0.391 apply 0071-pdl5-0069-glm-pdl-p2p-gather.patch
+#19 0.393 apply 0072-glue5-0067-glm-greedy-rows-one-launch.patch
+#19 0.395 apply 0073-glue5-0068-glm-mm-two-problem-decode-launches.patch
+#19 0.399 apply 0074-glue5-0069-glm-moe-router-select-group-sum.patch
+#19 0.402 apply 0075-glue5-0070-glm-shared-window-segment-launches.patch
+#19 0.406 apply 0076-integ5-tests-kv8-glue-fake-room-for-the-stack.patch
+#19 0.409 apply 0077-integ5-glm-mm-reduce-two-takes-pdl5-reduce-rule.patch
+#19 0.413 apply 0078-exl3p-0067-exl3p-prompt-experts-main-loop-and-epilogues.patch
+#19 0.417 apply 0079-exl3p-0068-exl3p-contract-records.patch
+#19 0.421 apply 0080-exl3p-0069-r6-glm-mm-prompt-loads-and-pairs.patch
+#19 0.425 apply 0081-exl3r-0067-exl3-decode-4-bit-grouped-experts-read-every-trellis-word-once.patch
+#19 0.429 apply 0082-exl3r-0068-exl3-decode-the-4-bit-chain-as-dependent-launches.patch
+#19 0.432 apply 0083-pdl5-0070-glm-pdl-moe-router-glue.patch
+#19 0.437 apply 0084-pdl5-0071-glm-kda-step-warps.patch
+#19 0.441 apply 0085-integ5-tests-kda-step-warps-no-logged-error.patch
+#19 0.444 apply 0086-glue5-0071-glm-decode-hc-finish-split.patch
+#19 0.448 apply 0087-glue5-0072-tests-glm-shared-check-e4m3-pages.patch
+#19 0.451 apply 0088-glue5-0073-glm-shared-window-batched-writes.patch
+#19 0.455 apply 0089-glue5-0074-glm-decode-hc-partial-split.patch
+#19 0.459 apply 0090-pdl5-p0074-glm-pdl-hc-split-waits.patch
+#19 0.463 apply 0091-attn5-0070-glm-decode-index-scores-on-glm-index-scores.patch
+#19 0.468 apply 0092-server-a-JSON-answer-stays-JSON-beside-offered-tools.patch
+#19 0.473 apply 0093-lanes-a-reply-grammar-is-freed-when-its-stream-cannot-start.patch
+#19 0.476 apply 0094-glm-cuda-a-prompt-chunk-takes-4096-rows.patch
+#19 0.479 apply 0095-glm-cuda-the-drafter-ingests-a-4096-row-chunk.patch
+#19 0.482 apply 0096-glm-cuda-the-gb10-window-and-shared-cost-tables-as-measured.patch
+#19 0.485 apply 0097-glm-cuda-the-draft-rule-s-cost-seed-as-gb10-measures-it.patch
+#19 0.488 97 engine patch(es) applied
+#19 1.483  M docs/kernel-contract.md
+#19 1.483  M tools/glm_index_emulate/cuda_runtime.h
+#19 1.483  M tools/glm_index_emulate/emulate.cpp
+#19 1.483  M zig/build/glm_family_host.zig
+#19 1.483  M zig/build/server.zig
+#19 1.483  M zig/exl3_prompt_host.zig
+#19 1.483  M zig/glm_mm_policy_host.zig
+#19 1.483  M zig/glm_pages_host.zig
+#19 1.483  M zig/glm_prompt_host.zig
+#19 1.483  M zig/glm_snapshot_host.zig
+#19 1.483  M zig/kernels/cuda/contract_controls.cu
+#19 1.483  M zig/kernels/cuda/exl3_decode.cuh
+#19 1.483  M zig/kernels/cuda/exl3_experts.cu
+#19 1.483  M zig/kernels/cuda/exl3_prompt.cuh
+#19 1.483  M zig/kernels/cuda/glm_glue.cu
+#19 1.483  M zig/kernels/cuda/glm_glue_attn.cuh
+#19 1.483  M zig/kernels/cuda/glm_glue_bmm.cuh
+#19 1.483  M zig/kernels/cuda/glm_glue_hc.cuh
+#19 1.483  M zig/kernels/cuda/glm_glue_index.cuh
+#19 1.483  M zig/kernels/cuda/glm_glue_latent.cuh
+#19 1.483  M zig/kernels/cuda/glm_glue_moe.cuh
+#19 1.483  M zig/kernels/cuda/glm_glue_rows.cuh
+#19 1.483  M zig/kernels/cuda/glm_kda.cu
+#19 1.483  M zig/kernels/cuda/glm_mm.cu
+#19 1.483  M zig/kernels/cuda/glm_triton.cuh
+#19 1.483  M zig/src/core/contract/measurements/pending_133.zig
+#19 1.483  M zig/src/core/contract/nvcc_133_records.zig
+#19 1.483  M zig/src/core/contract/pending_132.zig
+#19 1.483  M zig/src/core/contract/registry.zig
+#19 1.483  M zig/src/core/contract/registry_sets_test.zig
+#19 1.483  M zig/src/core/kv_pool.zig
+#19 1.483  M zig/src/core/lane_stream.zig
+#19 1.483  M zig/src/cuda/exl3_experts.zig
+#19 1.483  M zig/src/cuda/exl3_prompt.zig
+#19 1.483  M zig/src/cuda/root.zig
+#19 1.483  M zig/src/cuda/tp_group.zig
+#19 1.483  M zig/src/families/glm/cuda.zig
+#19 1.483  M zig/src/families/glm/cuda_dsa_block.zig
+#19 1.483  M zig/src/families/glm/cuda_engine.zig
+#19 1.483  M zig/src/families/glm/cuda_engine_pick.zig
+#19 1.483  M zig/src/families/glm/cuda_engine_types.zig
+#19 1.483  M zig/src/families/glm/cuda_exl3.zig
+#19 1.483  M zig/src/families/glm/cuda_follow.zig
+#19 1.483  M zig/src/families/glm/cuda_forward.zig
+#19 1.483  M zig/src/families/glm/cuda_forward_pieces.zig
+#19 1.483  M zig/src/families/glm/cuda_glue.zig
+#19 1.483  M zig/src/families/glm/cuda_index.zig
+#19 1.483  M zig/src/families/glm/cuda_kda.zig
+#19 1.483  M zig/src/families/glm/cuda_kda_block.zig
+#19 1.483  M zig/src/families/glm/cuda_kda_tp3_test.zig
+#19 DONE 1.5s
+
+#20 [runtime 2/7] RUN apt-get update  && apt-get install -y --no-install-recommends libibverbs1 ibverbs-providers rdma-core  && rm -rf /var/lib/apt/lists/*
+#20 0.413 Get:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease [256 kB]
+#20 0.679 Get:2 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa  InRelease [1576 B]
+#20 0.884 Get:3 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease [126 kB]
+#20 1.000 Get:4 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease [126 kB]
+#20 1.116 Get:5 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease [126 kB]
+#20 1.234 Get:6 http://ports.ubuntu.com/ubuntu-ports noble/universe arm64 Packages [19.0 MB]
+#20 1.636 Get:7 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa  Packages [1845 kB]
+#20 2.095 Get:8 http://ports.ubuntu.com/ubuntu-ports noble/restricted arm64 Packages [113 kB]
+#20 2.095 Get:9 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 Packages [1776 kB]
+#20 2.103 Get:10 http://ports.ubuntu.com/ubuntu-ports noble/multiverse arm64 Packages [274 kB]
+#20 2.105 Get:11 http://ports.ubuntu.com/ubuntu-ports noble-updates/multiverse arm64 Packages [107 kB]
+#20 2.105 Get:12 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 Packages [2226 kB]
+#20 2.122 Get:13 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 Packages [1798 kB]
+#20 2.161 Get:14 http://ports.ubuntu.com/ubuntu-ports noble-updates/restricted arm64 Packages [3270 kB]
+#20 2.184 Get:15 http://ports.ubuntu.com/ubuntu-ports noble-backports/multiverse arm64 Packages [669 B]
+#20 2.184 Get:16 http://ports.ubuntu.com/ubuntu-ports noble-backports/universe arm64 Packages [36.3 kB]
+#20 2.185 Get:17 http://ports.ubuntu.com/ubuntu-ports noble-backports/main arm64 Packages [49.0 kB]
+#20 2.185 Get:18 http://ports.ubuntu.com/ubuntu-ports noble-security/multiverse arm64 Packages [102 kB]
+#20 2.264 Get:19 http://ports.ubuntu.com/ubuntu-ports noble-security/universe arm64 Packages [1648 kB]
+#20 2.276 Get:20 http://ports.ubuntu.com/ubuntu-ports noble-security/restricted arm64 Packages [3148 kB]
+#20 2.292 Get:21 http://ports.ubuntu.com/ubuntu-ports noble-security/main arm64 Packages [1484 kB]
+#20 2.920 Fetched 37.5 MB in 3s (13.6 MB/s)
+#20 2.920 Reading package lists...
+#20 3.489 Reading package lists...
+#20 4.049 Building dependency tree...
+#20 4.202 Reading state information...
+#20 4.332 The following additional packages will be installed:
+#20 4.332   bsdutils libapparmor1 libargon2-1 libblkid1 libcryptsetup12
+#20 4.332   libdevmapper1.02.1 libfdisk1 libjson-c5 libkmod2 libmount1 libnl-3-200
+#20 4.332   libnl-route-3-200 libsmartcols1 libsystemd-shared libsystemd0 libudev1
+#20 4.332   libuuid1 mount systemd systemd-dev udev util-linux
+#20 4.333 Suggested packages:
+#20 4.333   cryptsetup-bin nfs-common systemd-container systemd-homed systemd-userdbd
+#20 4.333   systemd-boot libfido2-1 libip4tc2 libqrencode4 libtss2-esys-3.0.2-0
+#20 4.333   libtss2-mu-4.0.1-0 libtss2-rc0 libtss2-tcti-device0 polkitd dosfstools kbd
+#20 4.333   util-linux-extra util-linux-locales
+#20 4.333 Recommended packages:
+#20 4.333   bsdextrautils dmsetup uuid-runtime dmidecode ethtool iproute2
+#20 4.333   default-dbus-system-bus | dbus-system-bus networkd-dispatcher
+#20 4.333   systemd-timesyncd | time-daemon systemd-resolved systemd-hwe-hwdb
+#20 4.380 The following NEW packages will be installed:
+#20 4.380   ibverbs-providers libapparmor1 libargon2-1 libcryptsetup12
+#20 4.381   libdevmapper1.02.1 libfdisk1 libibverbs1 libjson-c5 libkmod2 libnl-3-200
+#20 4.381   libnl-route-3-200 libsystemd-shared rdma-core systemd systemd-dev udev
+#20 4.381 The following packages will be upgraded:
+#20 4.382   bsdutils libblkid1 libmount1 libsmartcols1 libsystemd0 libudev1 libuuid1
+#20 4.382   mount util-linux
+#20 4.558 9 upgraded, 16 newly installed, 0 to remove and 43 not upgraded.
+#20 4.558 Need to get 11.1 MB of archives.
+#20 4.558 After this operation, 39.8 MB of additional disk space will be used.
+#20 4.558 Get:1 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 bsdutils arm64 1:2.39.3-9ubuntu6.6 [99.1 kB]
+#20 4.874 Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 util-linux arm64 2.39.3-9ubuntu6.6 [1116 kB]
+#20 5.279 Get:3 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mount arm64 2.39.3-9ubuntu6.6 [116 kB]
+#20 5.290 Get:4 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libapparmor1 arm64 4.0.1really4.0.1-0ubuntu0.24.04.9 [51.9 kB]
+#20 5.296 Get:5 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libargon2-1 arm64 0~20190702+dfsg-4build1 [20.5 kB]
+#20 5.300 Get:6 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libblkid1 arm64 2.39.3-9ubuntu6.6 [124 kB]
+#20 5.346 Get:7 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libudev1 arm64 255.4-1ubuntu8.18 [176 kB]
+#20 5.358 Get:8 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libdevmapper1.02.1 arm64 2:1.02.185-3ubuntu3.2 [128 kB]
+#20 5.366 Get:9 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libjson-c5 arm64 0.17-1build1 [36.4 kB]
+#20 5.368 Get:10 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libuuid1 arm64 2.39.3-9ubuntu6.6 [36.8 kB]
+#20 5.371 Get:11 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libcryptsetup12 arm64 2:2.7.0-1ubuntu4.2 [261 kB]
+#20 5.398 Get:12 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libfdisk1 arm64 2.39.3-9ubuntu6.6 [142 kB]
+#20 5.437 Get:13 http://ports.ubuntu.com/ubuntu-ports noble-security/main arm64 libkmod2 arm64 31+20240202-2ubuntu7.2 [52.0 kB]
+#20 5.439 Get:14 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libmount1 arm64 2.39.3-9ubuntu6.6 [134 kB]
+#20 5.446 Get:15 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libsystemd-shared arm64 255.4-1ubuntu8.18 [2022 kB]
+#20 5.572 Get:16 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libsystemd0 arm64 255.4-1ubuntu8.18 [428 kB]
+#20 5.586 Get:17 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 systemd-dev all 255.4-1ubuntu8.18 [107 kB]
+#20 5.589 Get:18 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 systemd arm64 255.4-1ubuntu8.18 [3408 kB]
+#20 5.688 Get:19 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 udev arm64 255.4-1ubuntu8.18 [1853 kB]
+#20 5.741 Get:20 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libnl-3-200 arm64 3.7.0-0.3build1.1 [57.5 kB]
+#20 5.742 Get:21 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 rdma-core arm64 50.0-2ubuntu0.2 [63.2 kB]
+#20 5.742 Get:22 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libsmartcols1 arm64 2.39.3-9ubuntu6.6 [65.8 kB]
+#20 5.743 Get:23 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libnl-route-3-200 arm64 3.7.0-0.3build1.1 [182 kB]
+#20 5.745 Get:24 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libibverbs1 arm64 50.0-2ubuntu0.2 [67.5 kB]
+#20 5.746 Get:25 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 ibverbs-providers arm64 50.0-2ubuntu0.2 [375 kB]
+#20 5.830 debconf: delaying package configuration, since apt-utils is not installed
+#20 5.860 Fetched 11.1 MB in 1s (8210 kB/s)
+#20 5.879 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5332 files and directories currently installed.)
+#20 5.884 Preparing to unpack .../bsdutils_1%3a2.39.3-9ubuntu6.6_arm64.deb ...
+#20 5.888 Unpacking bsdutils (1:2.39.3-9ubuntu6.6) over (1:2.39.3-9ubuntu6.5) ...
+#20 5.930 Setting up bsdutils (1:2.39.3-9ubuntu6.6) ...
+#20 5.949 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5332 files and directories currently installed.)
+#20 5.952 Preparing to unpack .../util-linux_2.39.3-9ubuntu6.6_arm64.deb ...
+#20 5.955 Unpacking util-linux (2.39.3-9ubuntu6.6) over (2.39.3-9ubuntu6.5) ...
+#20 6.104 Setting up util-linux (2.39.3-9ubuntu6.6) ...
+#20 6.188 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5332 files and directories currently installed.)
+#20 6.192 Preparing to unpack .../mount_2.39.3-9ubuntu6.6_arm64.deb ...
+#20 6.195 Unpacking mount (2.39.3-9ubuntu6.6) over (2.39.3-9ubuntu6.5) ...
+#20 6.223 Selecting previously unselected package libapparmor1:arm64.
+#20 6.224 Preparing to unpack .../libapparmor1_4.0.1really4.0.1-0ubuntu0.24.04.9_arm64.deb ...
+#20 6.225 Unpacking libapparmor1:arm64 (4.0.1really4.0.1-0ubuntu0.24.04.9) ...
+#20 6.240 Selecting previously unselected package libargon2-1:arm64.
+#20 6.241 Preparing to unpack .../libargon2-1_0~20190702+dfsg-4build1_arm64.deb ...
+#20 6.242 Unpacking libargon2-1:arm64 (0~20190702+dfsg-4build1) ...
+#20 6.256 Preparing to unpack .../libblkid1_2.39.3-9ubuntu6.6_arm64.deb ...
+#20 6.258 Unpacking libblkid1:arm64 (2.39.3-9ubuntu6.6) over (2.39.3-9ubuntu6.5) ...
+#20 6.281 Setting up libblkid1:arm64 (2.39.3-9ubuntu6.6) ...
+#20 6.297 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5341 files and directories currently installed.)
+#20 6.301 Preparing to unpack .../libudev1_255.4-1ubuntu8.18_arm64.deb ...
+#20 6.304 Unpacking libudev1:arm64 (255.4-1ubuntu8.18) over (255.4-1ubuntu8.16) ...
+#20 6.328 Setting up libudev1:arm64 (255.4-1ubuntu8.18) ...
+#20 6.344 Selecting previously unselected package libdevmapper1.02.1:arm64.
+#20 6.344 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5341 files and directories currently installed.)
+#20 6.347 Preparing to unpack .../libdevmapper1.02.1_2%3a1.02.185-3ubuntu3.2_arm64.deb ...
+#20 6.348 Unpacking libdevmapper1.02.1:arm64 (2:1.02.185-3ubuntu3.2) ...
+#20 6.363 Selecting previously unselected package libjson-c5:arm64.
+#20 6.364 Preparing to unpack .../libjson-c5_0.17-1build1_arm64.deb ...
+#20 6.365 Unpacking libjson-c5:arm64 (0.17-1build1) ...
+#20 6.379 Preparing to unpack .../libuuid1_2.39.3-9ubuntu6.6_arm64.deb ...
+#20 6.381 Unpacking libuuid1:arm64 (2.39.3-9ubuntu6.6) over (2.39.3-9ubuntu6.5) ...
+#20 6.400 Setting up libuuid1:arm64 (2.39.3-9ubuntu6.6) ...
+#20 6.416 Selecting previously unselected package libcryptsetup12:arm64.
+#20 6.416 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5352 files and directories currently installed.)
+#20 6.418 Preparing to unpack .../libcryptsetup12_2%3a2.7.0-1ubuntu4.2_arm64.deb ...
+#20 6.419 Unpacking libcryptsetup12:arm64 (2:2.7.0-1ubuntu4.2) ...
+#20 6.435 Selecting previously unselected package libfdisk1:arm64.
+#20 6.436 Preparing to unpack .../libfdisk1_2.39.3-9ubuntu6.6_arm64.deb ...
+#20 6.436 Unpacking libfdisk1:arm64 (2.39.3-9ubuntu6.6) ...
+#20 6.450 Selecting previously unselected package libkmod2:arm64.
+#20 6.450 Preparing to unpack .../libkmod2_31+20240202-2ubuntu7.2_arm64.deb ...
+#20 6.451 Unpacking libkmod2:arm64 (31+20240202-2ubuntu7.2) ...
+#20 6.467 Preparing to unpack .../libmount1_2.39.3-9ubuntu6.6_arm64.deb ...
+#20 6.469 Unpacking libmount1:arm64 (2.39.3-9ubuntu6.6) over (2.39.3-9ubuntu6.5) ...
+#20 6.494 Setting up libmount1:arm64 (2.39.3-9ubuntu6.6) ...
+#20 6.509 Selecting previously unselected package libsystemd-shared:arm64.
+#20 6.509 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5372 files and directories currently installed.)
+#20 6.514 Preparing to unpack .../libsystemd-shared_255.4-1ubuntu8.18_arm64.deb ...
+#20 6.515 Unpacking libsystemd-shared:arm64 (255.4-1ubuntu8.18) ...
+#20 6.551 Preparing to unpack .../libsystemd0_255.4-1ubuntu8.18_arm64.deb ...
+#20 6.554 Unpacking libsystemd0:arm64 (255.4-1ubuntu8.18) over (255.4-1ubuntu8.16) ...
+#20 6.577 Setting up libsystemd0:arm64 (255.4-1ubuntu8.18) ...
+#20 6.592 Selecting previously unselected package systemd-dev.
+#20 6.592 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5380 files and directories currently installed.)
+#20 6.594 Preparing to unpack .../0-systemd-dev_255.4-1ubuntu8.18_all.deb ...
+#20 6.596 Unpacking systemd-dev (255.4-1ubuntu8.18) ...
+#20 6.617 Selecting previously unselected package systemd.
+#20 6.618 Preparing to unpack .../1-systemd_255.4-1ubuntu8.18_arm64.deb ...
+#20 6.626 Unpacking systemd (255.4-1ubuntu8.18) ...
+#20 6.721 Selecting previously unselected package udev.
+#20 6.722 Preparing to unpack .../2-udev_255.4-1ubuntu8.18_arm64.deb ...
+#20 6.729 Unpacking udev (255.4-1ubuntu8.18) ...
+#20 6.780 Selecting previously unselected package libnl-3-200:arm64.
+#20 6.781 Preparing to unpack .../3-libnl-3-200_3.7.0-0.3build1.1_arm64.deb ...
+#20 6.782 Unpacking libnl-3-200:arm64 (3.7.0-0.3build1.1) ...
+#20 6.797 Selecting previously unselected package rdma-core.
+#20 6.797 Preparing to unpack .../4-rdma-core_50.0-2ubuntu0.2_arm64.deb ...
+#20 6.802 Unpacking rdma-core (50.0-2ubuntu0.2) ...
+#20 6.818 Preparing to unpack .../5-libsmartcols1_2.39.3-9ubuntu6.6_arm64.deb ...
+#20 6.821 Unpacking libsmartcols1:arm64 (2.39.3-9ubuntu6.6) over (2.39.3-9ubuntu6.5) ...
+#20 6.840 Setting up libsmartcols1:arm64 (2.39.3-9ubuntu6.6) ...
+#20 6.855 Selecting previously unselected package libnl-route-3-200:arm64.
+#20 6.855 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6548 files and directories currently installed.)
+#20 6.858 Preparing to unpack .../libnl-route-3-200_3.7.0-0.3build1.1_arm64.deb ...
+#20 6.859 Unpacking libnl-route-3-200:arm64 (3.7.0-0.3build1.1) ...
+#20 6.874 Selecting previously unselected package libibverbs1:arm64.
+#20 6.874 Preparing to unpack .../libibverbs1_50.0-2ubuntu0.2_arm64.deb ...
+#20 6.875 Unpacking libibverbs1:arm64 (50.0-2ubuntu0.2) ...
+#20 6.891 Selecting previously unselected package ibverbs-providers:arm64.
+#20 6.892 Preparing to unpack .../ibverbs-providers_50.0-2ubuntu0.2_arm64.deb ...
+#20 6.903 Unpacking ibverbs-providers:arm64 (50.0-2ubuntu0.2) ...
+#20 6.930 Setting up libapparmor1:arm64 (4.0.1really4.0.1-0ubuntu0.24.04.9) ...
+#20 6.932 Setting up libargon2-1:arm64 (0~20190702+dfsg-4build1) ...
+#20 6.934 Setting up systemd-dev (255.4-1ubuntu8.18) ...
+#20 6.936 Setting up libfdisk1:arm64 (2.39.3-9ubuntu6.6) ...
+#20 6.938 Setting up libdevmapper1.02.1:arm64 (2:1.02.185-3ubuntu3.2) ...
+#20 6.946 Setting up mount (2.39.3-9ubuntu6.6) ...
+#20 6.948 Setting up libnl-3-200:arm64 (3.7.0-0.3build1.1) ...
+#20 6.951 Setting up libjson-c5:arm64 (0.17-1build1) ...
+#20 6.953 Setting up libkmod2:arm64 (31+20240202-2ubuntu7.2) ...
+#20 6.955 Setting up libnl-route-3-200:arm64 (3.7.0-0.3build1.1) ...
+#20 6.958 Setting up libsystemd-shared:arm64 (255.4-1ubuntu8.18) ...
+#20 6.961 Setting up libcryptsetup12:arm64 (2:2.7.0-1ubuntu4.2) ...
+#20 6.965 Setting up libibverbs1:arm64 (50.0-2ubuntu0.2) ...
+#20 6.999 Setting up ibverbs-providers:arm64 (50.0-2ubuntu0.2) ...
+#20 7.029 Setting up systemd (255.4-1ubuntu8.18) ...
+#20 7.044 Created symlink /etc/systemd/system/getty.target.wants/getty@tty1.service → /usr/lib/systemd/system/getty@.service.
+#20 7.046 Created symlink /etc/systemd/system/multi-user.target.wants/remote-fs.target → /usr/lib/systemd/system/remote-fs.target.
+#20 7.048 Created symlink /etc/systemd/system/sysinit.target.wants/systemd-pstore.service → /usr/lib/systemd/system/systemd-pstore.service.
+#20 7.051 Initializing machine ID from random generator.
+#20 7.065 /usr/lib/tmpfiles.d/static-nodes-permissions.conf:18: Failed to resolve group 'kvm': No such process
+#20 7.065 /usr/lib/tmpfiles.d/static-nodes-permissions.conf:19: Failed to resolve group 'kvm': No such process
+#20 7.065 /usr/lib/tmpfiles.d/static-nodes-permissions.conf:20: Failed to resolve group 'kvm': No such process
+#20 7.065 /usr/lib/tmpfiles.d/systemd-network.conf:10: Failed to resolve user 'systemd-network': No such process
+#20 7.065 /usr/lib/tmpfiles.d/systemd-network.conf:11: Failed to resolve user 'systemd-network': No such process
+#20 7.065 /usr/lib/tmpfiles.d/systemd-network.conf:12: Failed to resolve user 'systemd-network': No such process
+#20 7.065 /usr/lib/tmpfiles.d/systemd-network.conf:13: Failed to resolve user 'systemd-network': No such process
+#20 7.065 /usr/lib/tmpfiles.d/systemd.conf:22: Failed to resolve group 'systemd-journal': No such process
+#20 7.065 /usr/lib/tmpfiles.d/systemd.conf:23: Failed to resolve group 'systemd-journal': No such process
+#20 7.066 /usr/lib/tmpfiles.d/systemd.conf:28: Failed to resolve group 'systemd-journal': No such process
+#20 7.066 /usr/lib/tmpfiles.d/systemd.conf:29: Failed to resolve group 'systemd-journal': No such process
+#20 7.066 /usr/lib/tmpfiles.d/systemd.conf:30: Failed to resolve group 'systemd-journal': No such process
+#20 7.073 Creating group 'systemd-journal' with GID 999.
+#20 7.073 Creating group 'systemd-network' with GID 998.
+#20 7.073 Creating user 'systemd-network' (systemd Network Management) with UID 998 and GID 998.
+#20 7.088 Setting up udev (255.4-1ubuntu8.18) ...
+#20 7.241 Creating group 'input' with GID 997.
+#20 7.241 Creating group 'sgx' with GID 996.
+#20 7.241 Creating group 'kvm' with GID 995.
+#20 7.241 Creating group 'render' with GID 994.
+#20 7.253 Setting up rdma-core (50.0-2ubuntu0.2) ...
+#20 7.276 invoke-rc.d: could not determine current runlevel
+#20 7.279 invoke-rc.d: policy-rc.d denied execution of start.
+#20 7.281 rocep1s0f0: Failed to write 'change' to '/sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0/infiniband/rocep1s0f0/uevent': Read-only file system
+#20 7.283 eth0: Failed to write 'change' to '/sys/devices/virtual/net/eth0/uevent': Read-only file system
+#20 7.285 umad0: Failed to write 'change' to '/sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0/infiniband_mad/umad0/uevent': Read-only file system
+#20 7.286 Processing triggers for libc-bin (2.39-0ubuntu8.7) ...
+#20 DONE 7.4s
+
+#21 [build 6/9] RUN --mount=type=cache,id=tensorfold-zig-global,target=/root/.cache/zig     test "$(cat .zig-version)" = "0.17.0"       || { echo "TensorFold needs Zig $(cat .zig-version), ZIG_VERSION=0.17.0" >&2; exit 1; }  && steps="native grammar" && if [[ "1" == 1 ]]; then steps="install ${steps}"; fi  && start=${SECONDS}  && zig build ${steps} --prefix "/opt/tensorfold" --summary failures        -Doptimize=fast -Dcpu="native" -Dstrip="false"       -Dnvcc=/usr/local/cuda/bin/nvcc -Dsm="121" -Dxgrammar=/src/xgrammar  && echo "zig build ${steps}: $((SECONDS - start)) s"  && rm -f "/opt/tensorfold"/bin/tf-qwen35-*  && "/opt/tensorfold/native/bin/tensorfold-native" --version
+#21 ...
+
+#22 [runtime 3/7] COPY --from=nccl /opt/nccl/ /opt/nccl/
+#22 DONE 0.0s
+
+#21 [build 6/9] RUN --mount=type=cache,id=tensorfold-zig-global,target=/root/.cache/zig     test "$(cat .zig-version)" = "0.17.0"       || { echo "TensorFold needs Zig $(cat .zig-version), ZIG_VERSION=0.17.0" >&2; exit 1; }  && steps="native grammar" && if [[ "1" == 1 ]]; then steps="install ${steps}"; fi  && start=${SECONDS}  && zig build ${steps} --prefix "/opt/tensorfold" --summary failures        -Doptimize=fast -Dcpu="native" -Dstrip="false"       -Dnvcc=/usr/local/cuda/bin/nvcc -Dsm="121" -Dxgrammar=/src/xgrammar  && echo "zig build ${steps}: $((SECONDS - start)) s"  && rm -f "/opt/tensorfold"/bin/tf-qwen35-*  && "/opt/tensorfold/native/bin/tensorfold-native" --version
+#21 8.914 native
+#21 8.914 +- install tensorfold-native
+#21 8.914    +- compile exe tensorfold-native safe native
+#21 8.914       +- run /usr/local/cuda/bin/nvcc (drama3_fp8.fatbin) w
+#21 8.914 ./zig/kernels/cuda/drama3_fp8.cu(179): warning #177-D: variable "RW" was declared but never referenced
+#21 8.914     constexpr int RW = PromptCfg<M, RT, CW>::RW;
+#21 8.914                   ^
+#21 8.914 
+#21 8.914 Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+#21 8.914 
+#21 8.914 
+#21 13.42 native
+#21 13.42 +- install tensorfold-native
+#21 13.42    +- compile exe tensorfold-native safe native
+#21 13.42       +- run /usr/local/cuda/bin/nvcc (fp8_experts.fatbin) w
+#21 13.42 ./zig/kernels/cuda/fp8_experts.cu(149): warning #177-D: variable "RW" was declared but never referenced
+#21 13.42     constexpr int RW = PromptCfg<M, RT, CW>::RW;
+#21 13.42                   ^
+#21 13.42 
+#21 13.42 Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+#21 13.42 
+#21 13.42 
+#21 17.09 native
+#21 17.09 +- install tensorfold-native
+#21 17.09    +- compile exe tensorfold-native safe native
+#21 17.09       +- run /usr/local/cuda/bin/nvcc (glm_mm.fatbin) w
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=8, BM=128, WM=2, STAGES=2]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=6, BM=128, WM=2, STAGES=2]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=4, BM=128, WM=2, STAGES=2]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=16, BM=64, WM=2, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=16, BM=32, WM=1, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=16, BM=16, WM=1, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=8, BM=128, WM=2, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=8, BM=64, WM=2, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=8, BM=32, WM=1, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=8, BM=16, WM=1, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=6, BM=128, WM=2, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=6, BM=64, WM=2, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=6, BM=32, WM=1, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=6, BM=16, WM=1, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=4, BM=128, WM=2, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=4, BM=64, WM=2, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=4, BM=32, WM=1, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=4, BM=16, WM=1, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 ./zig/kernels/cuda/glm_mm.cu(112): warning #177-D: member "<unnamed>::Tile<BITS, BM, WM, STAGES>::SMEM [with BITS=16, BM=128, WM=2, STAGES=3]" was declared but never referenced
+#21 17.09       static constexpr int SMEM = STAGES * STAGE;
+#21 17.09                            ^
+#21 17.09 
+#21 17.09 
+#21 17.59 native
+#21 17.59 +- install tensorfold-native
+#21 17.59    +- compile exe tensorfold-native safe native
+#21 17.59       +- run /usr/local/cuda/bin/nvcc (flashnext_fact.fatbin) w
+#21 17.59 ./zig/kernels/cuda/flashnext_fact.cu(175): warning #128-D: loop is not reachable
+#21 17.59               for (int kt = 0; kt < GS / 16; ++kt) {
+#21 17.59               ^
+#21 17.59           detected during instantiation of "void fact::fact_kernel<BM,BN,WM,WN,STAGES,GPS,DBUF,MINB,FOLD,OUT16,BLOCKED>(const __nv_bfloat16 *, const float *, const uint32_t *, const __nv_bfloat16 *, const __nv_bfloat16 *, void *, float *, int, int, int, int, int, int, int) [with BM=64, BN=128, WM=2, WN=4, STAGES=3, GPS=2, DBUF=false, MINB=2, FOLD=true, OUT16=true, BLOCKED=true]" at line 264
+#21 17.59 
+#21 17.59 Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+#21 17.59 
+#21 17.59 
+#21 27.24 native
+#21 27.24 +- install tensorfold-native
+#21 27.24    +- compile exe tensorfold-native safe native
+#21 27.24       +- run /usr/local/cuda/bin/nvcc (flashnext_attn.fatbin) w
+#21 27.24 ./zig/kernels/cuda/flashnext_attn.cu(447): warning #128-D: loop is not reachable
+#21 27.24       for (int h = 0; h < 2; ++h) {
+#21 27.24       ^
+#21 27.24           detected during instantiation of "void attn_chunks<NB,ONE,FUSE,PAGED>(const __nv_bfloat16 *, const __nv_bfloat16 *, const __nv_bfloat16 *, const int *, float *, float *, float *, const int *, const int *, const int *, int, int, int, int, int, float, int, int, fn_attn::Pg) [with NB=1, ONE=true, FUSE=true, PAGED=false]" at line 494
+#21 27.24 
+#21 27.24 Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+#21 27.24 
+#21 27.24 ./zig/kernels/cuda/flashnext_attn.cu(447): warning #128-D: loop is not reachable
+#21 27.24       for (int h = 0; h < 2; ++h) {
+#21 27.24       ^
+#21 27.24           detected during instantiation of "void attn_chunks<NB,ONE,FUSE,PAGED>(const __nv_bfloat16 *, const __nv_bfloat16 *, const __nv_bfloat16 *, const int *, float *, float *, float *, const int *, const int *, const int *, int, int, int, int, int, float, int, int, fn_attn::Pg) [with NB=1, ONE=true, FUSE=true, PAGED=true]" at line 523
+#21 27.24 
+#21 27.24 
+#21 29.65 native
+#21 29.65 +- install tensorfold-native
+#21 29.65    +- compile exe tensorfold-native safe native
+#21 29.65       +- run /usr/local/cuda/bin/nvcc (prefill_attention.fatbin) w
+#21 29.65 ./zig/kernels/cuda/prefill_attention.cu(21): warning #177-D: variable "tf_prefill_attention::SMEM_MAX" was declared but never referenced
+#21 29.65   constexpr int SMEM_MAX = 96 * 1024;
+#21 29.65                 ^
+#21 29.65 
+#21 29.65 Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+#21 29.65 
+#21 29.65 
+#21 370.1 zig build install native grammar: 370 s
+#21 370.1 tensorfold-native 1.1.9
+#21 DONE 370.2s
+
+#23 [build 7/9] COPY --from=codecs /codecs/lib/ /opt/tensorfold/native/lib/
+#23 DONE 0.0s
+
+#24 [build 8/9] COPY --from=codecs /codecs/LICENSES/ /opt/tensorfold/LICENSES/
+#24 DONE 0.0s
+
+#25 [build 9/9] RUN shopt -s nullglob  && mkdir -p "${PREFIX}/LICENSES/tensorfold"  && cp -r LICENSE NOTICE THIRD_PARTY_NOTICES.md LICENSES "${PREFIX}/LICENSES/tensorfold/"  && cp /src/xgrammar/LICENSE "${PREFIX}/LICENSES/xgrammar-Apache-2.0.txt"  && cp /src/xgrammar/NOTICE "${PREFIX}/LICENSES/xgrammar-NOTICE.txt"  && cp /src/xgrammar/3rdparty/dlpack/LICENSE "${PREFIX}/LICENSES/dlpack-Apache-2.0.txt"  && patches=(/opt/tf-patches/engine/*.patch)  && { echo "tf_repo=${TF_REPO}"; echo "tf_ref=${TF_REF}"; echo "tf_commit=$(git rev-parse HEAD)";       echo "tf_version=$("${PREFIX}/native/bin/tensorfold-native" --version)";       echo "zig=${ZIG_VERSION} cpu=${ZIG_CPU} sm=${SM} optimize=fast strip=${STRIP}";       echo "arch=$(uname -m)";       echo "nvcc=$(nvcc --version | grep -o 'V[0-9][0-9.]*' | head -1)"; echo "xgrammar=${XGRAMMAR_TAG} ${XGRAMMAR_COMMIT}";       echo "patches=${#patches[@]}"; for p in "${patches[@]}"; do sha256sum "${p}"; done;     } > "${PREFIX}/BUILD-INFO"  && cat "${PREFIX}/BUILD-INFO"
+#25 0.239 tf_repo=https://github.com/ashhart/TensorFold.git
+#25 0.239 tf_ref=f350cd3ea253a042e205746928271f9d8f71a82d
+#25 0.239 tf_commit=f350cd3ea253a042e205746928271f9d8f71a82d
+#25 0.239 tf_version=tensorfold-native 1.1.9
+#25 0.239 zig=0.17.0 cpu=native sm=121 optimize=fast strip=false
+#25 0.239 arch=aarch64
+#25 0.239 nvcc=V13.3.73
+#25 0.239 xgrammar=v0.2.8 97787376faee5ed8466cfad57c99855e4ce2f6aa
+#25 0.239 patches=97
+#25 0.239 d7e44a2c70069fd82529fcf18fbb67175dea43aa5141cff537054dc77c890631  /opt/tf-patches/engine/0001-glm-cuda-EXL3-mcg-experts-at-any-whole-bit-width-mix.patch
+#25 0.239 61abaf57e928b7c46ee8873bf64b1bbe60d0ed5bf62a668d0314759b086750b4  /opt/tf-patches/engine/0002-tests-GLM-EXL3-at-mixed-widths-synthetic-and-a-check.patch
+#25 0.239 c503a9740e54e7f52a416a718ce3cb24d247916763ed4f408e400bba552a5e5f  /opt/tf-patches/engine/0003-exl3-cuda-the-common-prompt-kernels-take-3-bit-mcg-g.patch
+#25 0.239 4bde529d5522b1908b22bb9fd8292baaf0af0d747b6060e13bae68543d75663c  /opt/tf-patches/engine/0004-tests-exl3-prompt-k6-the-3-and-4-bit-prompt-kernels-.patch
+#25 0.239 4b7826bdf196b45c5afdbd278e012fa695d74ba0404ab5143aba33ed15d0345f  /opt/tf-patches/engine/0005-glm-cuda-latent-attention-reads-FP8-key-tiles-in-8-b.patch
+#25 0.239 14da5f622519b859cf173f21f1888dc50e17c0e772a60ff1b5cba6e8afb7473c  /opt/tf-patches/engine/0006-glm-cuda-a-decode-window-s-shared-expert-on-a-side-s.patch
+#25 0.239 bf84b1ad9293883ea3bcff831a0553e41f7ef82195cceb533d2f782360b5fc1f  /opt/tf-patches/engine/0007-glm-cuda-a-prompt-pass-s-EXL3-experts-in-one-call-wr.patch
+#25 0.239 ed10ca19e792404ee1bdf35c23c3bcc8b5be580debea890406b8fb53b7446ed5  /opt/tf-patches/engine/0008-glm-cuda-no-target-MTP-prompt-pass-beside-a-drafter.patch
+#25 0.239 184e88f57304e0422f33101ff5b4989db6cb85ca9495cd4119a09cd5d7f82527  /opt/tf-patches/engine/0009-glm-cuda-packed-prompt-matmuls-in-two-stages-two-blo.patch
+#25 0.239 5e089db79c47010f31e8e2345982a34e6715b2b591250bddb08fa4993cb6255c  /opt/tf-patches/engine/0010-glm-cuda-the-shared-expert-side-stream-drains-before.patch
+#25 0.239 f693de2de9eafc08a44fb06b7d67a99ec789201ab639409db71d678491df1d40  /opt/tf-patches/engine/0011-glm-cuda-the-latent-attention-chunks-256-thread-laun.patch
+#25 0.239 4d66a211a190d1245ce33b2b4fdc1962c683062c5ef3153563afce3c30a178fc  /opt/tf-patches/engine/0012-glm-cuda-the-snapshot-budget-leaves-out-target-MTP-r.patch
+#25 0.239 82c33c5feb9953d8697a28075ec771cf2fcdcce05ea4a90c1195b9239b808711  /opt/tf-patches/engine/0013-glm-cuda-DFlash2-reads-complete-prompt-taps-at-TP-1.patch
+#25 0.239 8afcff876b97b97f780631b672e79f7e67c1e730c3075c7fc380e0826002b8fb  /opt/tf-patches/engine/0014-glm-cuda-beside-DFlash2-the-target-MTP-layer-its-cac.patch
+#25 0.239 2f14526c65712113ddeb131a5cc6462fefa55a6023609dd52f150c9146b310a5  /opt/tf-patches/engine/0015-glm-cuda-kept-prompt-states-spill-into-pinned-host-m.patch
+#25 0.239 bdf0cae3fb0257eac5e39d58875db689f06eecaf507d3b0914ab00a7f311f5c8  /opt/tf-patches/engine/0016-tests-the-GLM-GPU-checks-take-mem2-s-drafts-option-a.patch
+#25 0.239 d5b8fcf8c817a4a8ce6a22e617c0e2ff7d30222ba0fdd6abbc840f07ec6fc170  /opt/tf-patches/engine/0017-glm-cuda-E4M3-latent-cache-kernels-on-KV-pages-paged.patch
+#25 0.239 ddb4782db6742b5da9ebb777d50243262ce6f556911f4f95c70236171d9498a9  /opt/tf-patches/engine/0018-glm-cuda-E4M3-sequences-on-KV-pages-page-layout-plac.patch
+#25 0.239 1e4412a213084fa5f2060ab3fc6fac3a5e15ef786aacc8320f49430fdbb2e126  /opt/tf-patches/engine/0019-glm-cuda-the-KV-pool-says-what-a-held-back-request-w.patch
+#25 0.239 1e5ffc76242af1cd566e0478527198fd9d680dd9deef2d9f3c313ef0d5301026  /opt/tf-patches/engine/0020-contract-GLM-s-three-E4M3-latent-launches-on-KV-page.patch
+#25 0.239 2b4db13dd5ed0586dd5ca55e6ed1f751b60c2343a73b0b5df0f236f92e510952  /opt/tf-patches/engine/0021-glm-cuda-E4M3-caches-on-KV-pages-launch-the-_paged-k.patch
+#25 0.239 eed26be7043503a857c82ae1e5380d18ee211ad0622397baf8688ca1eb6d5e02  /opt/tf-patches/engine/0022-glm-cuda-a-DSA-block-on-E4M3-pages-keeps-its-sparse-.patch
+#25 0.239 b085f6e3241afb5ca6232020daaab97779a0a8aa09b4a682ee9707ba0bbed0d4  /opt/tf-patches/engine/0023-glm-cuda-paged-E4M3-chunks-load-a-dense-chunk-as-the.patch
+#25 0.239 567119e7c9566ff779fd52d41ea41179a8301ac16f6eabe26177f0ad4f3499e8  /opt/tf-patches/engine/0024-glm-cuda-every-rank-checks-a-stream-s-page-ids-again.patch
+#25 0.239 e1537f19033b327df76018c6dc97d896bd10344a181ebee2293068e596ce9a04  /opt/tf-patches/engine/0025-glm-cuda-pageBytesOf-s-comment-the-pool-s-wait-note-.patch
+#25 0.239 9cfd994c7a09e314591fd23413eb18f470f7036daab76e73451948a27ebce3cc  /opt/tf-patches/engine/0026-exl3-cuda-the-grouped-experts-kernel-loads-a-tile-ah.patch
+#25 0.239 c878e6ac31cb126ad9b33e8aea4a147305ca8e3219223e1532276ec8c2d5a13f  /opt/tf-patches/engine/0027-exl3-cuda-the-grouped-load-ahead-on-sm_120-up-only-b.patch
+#25 0.239 e98effbff9a0acef8b1d5650af8cef5d2e1bfe51c7c04e315a9f937ea35b651d  /opt/tf-patches/engine/0028-exl3-decode-read-the-trellis-through-ld.global.nc.L1.patch
+#25 0.239 17c9409147ea0819e5ca254fb1159af52d2fa5568748ecc5b29bc15e45cb3418  /opt/tf-patches/engine/0029-exl3-decode-keep-the-new-comment-to-one-line.patch
+#25 0.239 f3c98b53ae41c8f6bdc0af54a74fdc9dd755f9c986555eece9d0e0c460765179  /opt/tf-patches/engine/0030-glm-cuda-a-decode-window-s-MoE-glue-fused-EXL3-decod.patch
+#25 0.239 b1d9d2089a0231ca766dd938ba8f0ae35d028bcd989be347e9742a612a65228f  /opt/tf-patches/engine/0031-glm-cuda-the-follower-s-step-in-one-broadcast-rank-0.patch
+#25 0.239 88bcbc0c718c5ae5729be61f29e204e026b4f9687a1a94364840104bda5a6279  /opt/tf-patches/engine/0032-glm-cuda-a-step-the-link-refuses-leaves-rank-0-s-pen.patch
+#25 0.239 e262adbe17349404a064b40628ed7d36cd9af14e3d3816c8d6cadef68b749a92  /opt/tf-patches/engine/0033-tests-GLM-TP3-s-KDA-projections-record-the-f_b-g_b-p.patch
+#25 0.239 2a48934f86764ee5aaea1b058e60e7532ff5c897f4cd87517a2bdc4955488280  /opt/tf-patches/engine/0034-glm-cuda-two-ranks-on-one-host-gather-a-window-s-par.patch
+#25 0.239 c33538920c3ccafd12b15aa46a85540627709dc567f10a70bb38f54c05d6b4d3  /opt/tf-patches/engine/0035-glm-cuda-TF_GLM_CE_EXCHANGE-1-pushes-a-prompt-chunk-.patch
+#25 0.239 8e9e3ab4e3b4ca28a609b846ed71940e6279491fca89b5c0f098e25d8e756c3f  /opt/tf-patches/engine/0036-glm-cuda-DFlash2-window-rule-by-expected-tokens-a-ms.patch
+#25 0.239 d3fcd53982ddc8f48aeee68c50f765512a651c14006fa094059af27f3236e1a5  /opt/tf-patches/engine/0037-glm-cuda-a-copy-drafted-round-s-DFlash2-contexts-ing.patch
+#25 0.239 8dc80cf87a67b31b25fc1ca70cad13099f2994a26bb67636a185424dc774c127  /opt/tf-patches/engine/0038-glm-cuda-the-tpm-window-rule-s-seeds-measured-at-sm_.patch
+#25 0.239 c8a9835ac57ec42a6ed59a6629cf5cf1b5aba939cd39aaee3f494069a9d34d17  /opt/tf-patches/engine/0039-glm-cuda-decode-windows-of-16-rows-so-a-context-copy.patch
+#25 0.239 4ce966a3c60fdd37d5a34b77e5d328cd2324c0e369139a7bda3d4201de577671  /opt/tf-patches/engine/0040-glm-cuda-copy-drafted-rounds-skip-DFlash2-s-block-pa.patch
+#25 0.239 6d7fd94961533f0e31f8b9023e73816a9d14e48f8072cee354503144b20ccbeb  /opt/tf-patches/engine/0041-glm-cuda-TF_GLM_ABSORB_MMA-1-a-prompt-s-absorb_q-and.patch
+#25 0.239 1177a4bb35609a40ca35035d67189b4c4a7edac8eadf24cff2646a0c06004066  /opt/tf-patches/engine/0042-tests-GLM-s-E4M3-caches-on-KV-pages-through-the-actu.patch
+#25 0.239 f1a9f115b98ea852ec7318c09bf63792818a9063c6bd85eff348d247513742bd  /opt/tf-patches/engine/0043-glm-cuda-a-begin-that-fails-after-its-step-frees-the.patch
+#25 0.239 960fd2272881be95be02e3989464d2607d4b9b3f09ced2ccd7d7524325fa36b3  /opt/tf-patches/engine/0044-native-a-refused-page-plan-names-the-engine-s-own-wi.patch
+#25 0.239 e38e348f2e2efcec33508026aa05d8db9633a05dc6d4ecbb7233f51b7d3815ba  /opt/tf-patches/engine/0045-native-beside-GLM-s-host-tier-a-device-prompt-cache-.patch
+#25 0.239 ec6fccfcf50d0855060ffdf7617ae7fb99d347850ae130babf3619e0ead8639f  /opt/tf-patches/engine/0046-tests-the-exact-context-checks-and-the-smallest-kept.patch
+#25 0.239 829b81c1bb4d76fb62ea72f95484dd71bbf43adc2d61eceeb789d6c734225e70  /opt/tf-patches/engine/0047-tests-the-GLM-mm-policy-and-prompt-workflow-host-fak.patch
+#25 0.239 30e77f0d4b36fa26a1e7d5a70c168b239d9ee08072d321288d01b1a05027ad15  /opt/tf-patches/engine/0048-glm-cuda-a-follower-s-verify-steps-still-read-the-pe.patch
+#25 0.239 c3605f93fb388c798ad6a61754705b0a00ec26d62b8b3111aadb7ff5c194e695  /opt/tf-patches/engine/0049-glm-cuda-the-lanes-host-checks-move-to-their-own-fil.patch
+#25 0.239 107c5739a8592915aee76e6330668a9af212d91cd36164ce143a35562a428b81  /opt/tf-patches/engine/0050-glm-cuda-a-prompt-step-takes-two-chunks-while-no-oth.patch
+#25 0.239 26ddfb54a788e6590defbb017458f5b86a6b54f9757cddb62593ecdeebf2e1ca  /opt/tf-patches/engine/0051-glm-cuda-a-paired-step-takes-rank-0-s-indexer-split-.patch
+#25 0.239 3dfae4ef092475d7075bd28e3f72cd5f40597e71bc4c319508c9233a2c460e0c  /opt/tf-patches/engine/0052-glm-cuda-glm-split-check-takes-the-pair-s-Leader.chu.patch
+#25 0.239 e46313ea491dc812e7bd826e6bbd12c439d292c25b113df51c6c0a850025cdf0  /opt/tf-patches/engine/0053-glm-cuda-a-step-pairs-only-where-its-index-rings-reb.patch
+#25 0.239 f12fe4a3107d3619504517984b2adb7f9224f7a308387cd6dfbec02f42505250  /opt/tf-patches/engine/0054-glm-cuda-only-an-engine-with-other-ranks-makes-the-p.patch
+#25 0.239 0e5f86bfb55cfa7bcb04bb0326fb697c58fda32727a000b16906ef2657bd1f6c  /opt/tf-patches/engine/0055-glm-cuda-one-table-gives-the-twin-s-fields-their-siz.patch
+#25 0.239 54205e6ccdab667d4995dc99e8165df8006bd0564c316d8f556bf4d4176c9ecd  /opt/tf-patches/engine/0056-glm-cuda-glm-split-check-s-list-of-prompts-is-descri.patch
+#25 0.239 4adc16e02c87d36d51babdc723801ca3178ac6d618a91130199a4a781da6a08d  /opt/tf-patches/engine/0057-glm-cuda-paired-prompt-steps-beside-DFlash2-each-chu.patch
+#25 0.239 002e2e93e7e4cb2d8ec8867ea00e39410da77d75dcbf9a7c882fb16f197a3a53  /opt/tf-patches/engine/0058-glm-cuda-TF_GLM_DFLASH2_RING_DIGEST-hashes-a-prompt-.patch
+#25 0.239 fcec76b0e9995124500de3e6a2cfd927f5b045da97eabb412b60fe0e4555045c  /opt/tf-patches/engine/0059-glm-cuda-prompts-pair-from-three-chunks-on-TF_GLM_PR.patch
+#25 0.239 25a7ae1f67c42dc70ff59561f390075d45f82f437a06d83931bea1c4120cf95a  /opt/tf-patches/engine/0060-tests-glm-pair-check-takes-mem2-s-drafts-option.patch
+#25 0.239 092fd779c05118379c870dc59e321a8098fd1b021ffd64b091b35a8e85a6c395  /opt/tf-patches/engine/0061-glm-cuda-a-paired-step-s-twin-holds-no-tap-rows-and-.patch
+#25 0.239 a0a5ee3e623a11ea64057f31a9f2ec54b49085e56af5d005f00f6fb9236f8a64  /opt/tf-patches/engine/0062-tests-glm-pair-check-on-KV-pages-bf16-and-E4M3-and-a.patch
+#25 0.239 49b23347221a4e34cf3e6ea5d2ed66857fd5ef317ad5bc176fb55d2c355634ff  /opt/tf-patches/engine/0063-glm-cuda-comm3-s-copy-engine-exchange-in-prefill3-s-.patch
+#25 0.239 10e6b537ff9bdbc877fbee26df4cbd89a05ecfb28ce60f9f2838d1c74302e7c4  /opt/tf-patches/engine/0064-glm-cuda-TF_GLM_W8A8-1-or-32-packed-8-bit-prompt-lin.patch
+#25 0.239 ffbe2770d99285041346ae5f37ec2a78405fcc26076bd0342832167e01b6581d  /opt/tf-patches/engine/0065-tests-the-GLM-TP3-KDA-test-s-mm.Kernels-literal-name.patch
+#25 0.239 68111a15f41cac3c17c752e38066c41770766af69d756152b2e1562da7dbbc9b  /opt/tf-patches/engine/0066-tests-glm-pair-check-on-whole-windows-reads-no-page-.patch
+#25 0.239 9587afda02b09ab954ea19813584363f1d90ba1109f3516dc4f40fc89712aba0  /opt/tf-patches/engine/0067-attn5-0067-glm-dsa-decode-select-many-ctas.patch
+#25 0.239 a5fd8398167ef25d2edd79b1f7ad865d2346a1fec5a372af5c8989d227f4f751  /opt/tf-patches/engine/0068-attn5-0068-glm-sparse-attention-in-kernel-merge.patch
+#25 0.239 9b908baf24bb70111531e0eb6a2fadc151cbd5d8de13e9cd312d4f0fb101a1c5  /opt/tf-patches/engine/0069-pdl5-0067-glm-pdl-reduce.patch
+#25 0.239 e7177cf7d0c92a2a75e19d768a4293d53254d31ae9d8420b8fddcf3111bcd467  /opt/tf-patches/engine/0070-pdl5-0068-glm-pdl-hc-chain.patch
+#25 0.239 51986ac62e66da198ba1c62d74d3cb569f9ef056887e464e69761d16b8fbce21  /opt/tf-patches/engine/0071-pdl5-0069-glm-pdl-p2p-gather.patch
+#25 0.239 59bbc20a65d8a39a1cd6b4b149a762652bb40f1edf6fc86fa3c25839e2132697  /opt/tf-patches/engine/0072-glue5-0067-glm-greedy-rows-one-launch.patch
+#25 0.239 254e46315c39afb9377ee6ac6668244c149f0e8b61b249eaded226d6c9de02cb  /opt/tf-patches/engine/0073-glue5-0068-glm-mm-two-problem-decode-launches.patch
+#25 0.239 bbb793242967a38f6bcd81c37aed323182fde0241bc3f5fc8754d3ddd6efd3f5  /opt/tf-patches/engine/0074-glue5-0069-glm-moe-router-select-group-sum.patch
+#25 0.239 ef37c00b9c9e6235f4dd754cf788af08e264c14a077c080620a090ee4577abb7  /opt/tf-patches/engine/0075-glue5-0070-glm-shared-window-segment-launches.patch
+#25 0.239 712945c61b38f513be476607b4eddca5f4b0c9c64148ba0483552c5a43049433  /opt/tf-patches/engine/0076-integ5-tests-kv8-glue-fake-room-for-the-stack.patch
+#25 0.239 4b68a7520668a66e6c88772085ee5702386fe1dbe4d29dcb9ca7b56ba1d6de66  /opt/tf-patches/engine/0077-integ5-glm-mm-reduce-two-takes-pdl5-reduce-rule.patch
+#25 0.239 b107b22901822af101a8e7c3ab6fff075cb1267e6ac6853c4f3f04467e422f4a  /opt/tf-patches/engine/0078-exl3p-0067-exl3p-prompt-experts-main-loop-and-epilogues.patch
+#25 0.239 a56edd869c8a3316cc8bbc3b67c27c9b2fa3403751a3fd5755e1775e232cb56f  /opt/tf-patches/engine/0079-exl3p-0068-exl3p-contract-records.patch
+#25 0.239 29cd17e19f6ac5f40c27ade76aae65f690279282f90688371a8b29fa262102df  /opt/tf-patches/engine/0080-exl3p-0069-r6-glm-mm-prompt-loads-and-pairs.patch
+#25 0.239 0464440ffed91884a8883607ce3a0664e386cbb74643a7d936a8101c17db9eab  /opt/tf-patches/engine/0081-exl3r-0067-exl3-decode-4-bit-grouped-experts-read-every-trellis-word-once.patch
+#25 0.239 1069310744ac87ab1ccb1485f7343a7fcc9a43b87accccd737dade07bfcc5b43  /opt/tf-patches/engine/0082-exl3r-0068-exl3-decode-the-4-bit-chain-as-dependent-launches.patch
+#25 0.239 1200f206c0ce7c00eaf1963e2df3d315caa8d06a139f6d2b2d4c9e60135c456a  /opt/tf-patches/engine/0083-pdl5-0070-glm-pdl-moe-router-glue.patch
+#25 0.239 2d58d8ad5d10e624ef0b4b461b9bf106e6e5c134542e14efd8b9563a593688ad  /opt/tf-patches/engine/0084-pdl5-0071-glm-kda-step-warps.patch
+#25 0.239 736ec8a271f9dc2a4c5d13a940d68dd9732877d6fc865379bc3814917949777e  /opt/tf-patches/engine/0085-integ5-tests-kda-step-warps-no-logged-error.patch
+#25 0.239 03c83883d3ce81eb17d52f3ab0c635c84ce2a3a2017eeae88f05ab264e0bfd0e  /opt/tf-patches/engine/0086-glue5-0071-glm-decode-hc-finish-split.patch
+#25 0.239 00e1ec07ec0c9b22554531a64fe68aafdbe4801e95ceb64ea2ca3b1c274e0605  /opt/tf-patches/engine/0087-glue5-0072-tests-glm-shared-check-e4m3-pages.patch
+#25 0.239 74055946b527afcff5a8e0853e08855b8de0988e02c8d1042bec5b424e1b3b61  /opt/tf-patches/engine/0088-glue5-0073-glm-shared-window-batched-writes.patch
+#25 0.239 0febefd86ceaa83569dc3d32b13fddfb2da4bb91a9f0bf537200982423dc0be4  /opt/tf-patches/engine/0089-glue5-0074-glm-decode-hc-partial-split.patch
+#25 0.239 4d7a9518c03478ca6533b70b092ae15a2cfc12eb8880fd742e9df1f0509f77d6  /opt/tf-patches/engine/0090-pdl5-p0074-glm-pdl-hc-split-waits.patch
+#25 0.239 f6c922c2e8119f1c23d5f974702dbc58b8cf22d4e4fd8fe294eac4e975b83824  /opt/tf-patches/engine/0091-attn5-0070-glm-decode-index-scores-on-glm-index-scores.patch
+#25 0.239 54258e8ce9afdd93c9d80d17302030000c1a12061ce6d520c66b038a0e8ce7a9  /opt/tf-patches/engine/0092-server-a-JSON-answer-stays-JSON-beside-offered-tools.patch
+#25 0.239 636b0a5eef48c67654448f2c346f8dbe57d824789126d6175393111642896a95  /opt/tf-patches/engine/0093-lanes-a-reply-grammar-is-freed-when-its-stream-cannot-start.patch
+#25 0.239 9a5889c7acabc7db634645c38a5be70b3720469be085cac17435d856af86e5e8  /opt/tf-patches/engine/0094-glm-cuda-a-prompt-chunk-takes-4096-rows.patch
+#25 0.239 9abf42db09e7a2a5282a2a19e44e772592c3c00d48c10c12bf1d9fb836175a22  /opt/tf-patches/engine/0095-glm-cuda-the-drafter-ingests-a-4096-row-chunk.patch
+#25 0.239 d69744d7d03db80c26e6fcc32f675cff4c1071a2a8fbce843e6bb008643f73c3  /opt/tf-patches/engine/0096-glm-cuda-the-gb10-window-and-shared-cost-tables-as-measured.patch
+#25 0.239 02c4222af8c0baaa6c20774ed8426020d780eeb1f741f064b62573c8d24a76ff  /opt/tf-patches/engine/0097-glm-cuda-the-draft-rule-s-cost-seed-as-gb10-measures-it.patch
+#25 DONE 0.3s
+
+#26 [runtime 4/7] COPY --from=build /opt/tensorfold/ /opt/tensorfold/
+#26 DONE 0.1s
+
+#27 [runtime 5/7] RUN shopt -s nullglob  && if [[ -f /opt/nccl/libnccl.so.2 ]]; then       dir=$(dirname "$(find /usr/lib /lib -name 'libnccl.so.2' | head -1)")       && dir=${dir:-/usr/lib/$(uname -m)-linux-gnu}       && rm -f "${dir}"/libnccl.so.2 "${dir}"/libnccl.so.2.[0-9]*.[0-9]*       && cp -a /opt/nccl/libnccl.so.2 "${dir}/libnccl.so.2"       && echo "NCCL replaced from the wheel in ${dir}";     fi  && rm -rf /opt/nccl  && so=$(find /usr/lib /lib -name 'libnccl.so.2*' | head -1)  && test -n "${so}" || { echo "no libnccl.so.2 in the runtime image: pass --build-arg NCCL_WHEEL=<version>" >&2; exit 1; }  && ver=$( { grep -aoE '[0-9]+\.[0-9]+\.[0-9]+' "${so}" || true; } | { grep -xE '2\.[0-9]+\.[0-9]+' || true; }            | sort -u -t. -k1,1n -k2,2n -k3,3n | tail -1 )  && echo "libnccl: ${so} (${ver:-unknown}), engine minimum 2.30.0"  && if [ -n "${ver}" ]; then       printf '%s\n%s\n' "2.30.0" "${ver}" | sort -C -t. -k1,1n -k2,2n -k3,3n         || { echo "libnccl ${ver} is older than 2.30.0: pass --build-arg NCCL_WHEEL=<version>" >&2; exit 1; };     else       echo "libnccl: could not read a version string; the GLM path needs 2.30.0 or newer (it does not check at run time)" >&2;     fi
+#27 0.429 libnccl: /usr/lib/aarch64-linux-gnu/libnccl.so.2 (2.30.7), engine minimum 2.30.0
+#27 DONE 0.4s
+
+#28 [runtime 6/7] RUN shopt -s nullglob  && ln -s "/opt/tensorfold/native/bin/tensorfold-native" /usr/local/bin/tensorfold-native  && ln -s "/opt/tensorfold/native/bin/tensorfold-native" /usr/local/bin/tensorfold  && for exe in "/opt/tensorfold"/bin/*; do       name="${exe##*/}"; [[ "${name}" == tensorfold ]] && name=tensorfold-cuda; ln -s "${exe}" "/usr/local/bin/${name}";     done  && tensorfold-native --version
+#28 0.148 tensorfold-native 1.1.9
+#28 DONE 0.2s
+
+#29 [runtime 7/7] WORKDIR /workspace
+#29 DONE 0.0s
+
+#30 exporting to image
+#30 exporting layers
+#30 exporting layers 0.4s done
+#30 writing image sha256:47d6e0075f76611d6b230a037be30c102d69a32fe80f331e08e3c7bfeaceeeaa done
+#30 naming to docker.io/library/tensorfold-glm53-spark:42298ca48d80 done
+#30 DONE 0.4s
+tensorfold-native 1.1.9
+Sending tensorfold-glm53-spark:42298ca48d80 to 10.0.34.4 (its copy is missing); this takes a few minutes over the link.
+[I_IMAGE] 10.0.34.4 now runs this image (tensorfold-glm53-spark:42298ca48d80, 7949dc96fb57).
+
+[3/6] Download or check the checkpoint and the drafter weights on both Sparks
+Checkpoint: model: EXL3 4-bit experts, mcg codebook, vision (local, mounted read-only; no download).
+DFlash2 drafter weights: CC BY-NC-ND 4.0, non-commercial. DRAFTER=mtp or DRAFTER=none serves without them.
+DFlash2 is ready: /home/zurih/.cache/aevonix-glm53/dflash2
+
+[4/6] Find the link between the Sparks and the RDMA devices it runs on
+[I_FABRIC] Link: 10.0.34.3 (enp1s0f1np1) <-> 10.0.34.4 (enp1s0f1np1); RDMA rocep1s0f1,roceP2p1s0f1 <-> rocep1s0f1,roceP2p1s0f1, RoCE v2 GID 3/3.
+[I_ROCE] Both Sparks expose /dev/infiniband; the ranks will try the RoCE all-gather path (TF_ROCE_MAX_KB=4096) and fall back to NCCL together if either cannot bring it up.
+[I_WEIGHTS] 10.0.34.4 holds the checkpoint and the drafter.
+
+[5/6] Start rank 1 on 10.0.34.4, then rank 0 here
+Ranks:
+  rank 1 on 10.0.34.4 (follows rank 0's steps, binds no port):
+    env TF_GLM_RANK=1 TF_GLM_WORLD=2 TF_CUDA_DEVICE=0 NCCL_COMM_ID=10.0.34.3:29583 /usr/local/bin/tensorfold-native serve /model --name GLM-5.3-Flash --host 0.0.0.0 --port 8888 --context 1048576 --parallel 4 --max-tokens 32768 --kv-cache fp8 --no-update-check --no-thinking --reasoning-effort high --vision --vision-max-images 50 --chat-template /templates/chat_template.jinja --drafter /dflash2 --drafter-bits 4 
+  rank 0 here (spark3), HTTP server and vision tower:
+    env TF_GLM_RANK=0 TF_GLM_WORLD=2 TF_CUDA_DEVICE=0 NCCL_COMM_ID=10.0.34.3:29583 /usr/local/bin/tensorfold-native serve /model --name GLM-5.3-Flash --host 0.0.0.0 --port 8888 --context 1048576 --parallel 4 --max-tokens 32768 --kv-cache fp8 --no-update-check --no-thinking --reasoning-effort high --vision --vision-max-images 50 --chat-template /templates/chat_template.jinja --drafter /dflash2 --drafter-bits 4 
+Started rank 1 on 10.0.34.4.
+Started rank 0 here (logs: /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/logs/run-20261102T232155Z-1646172-1).
+
+[6/6] Wait for the API and run a greedy smoke test
+info: p2p: rank 0 of 2: GPU 0 NVIDIA GB10 (0000000F:01:00.0); driver 580.159.03, CUDA driver API 13.3, NCCL 2.30.7
+info: p2p: peer access: TensorFold enables none itself (no cuCtxEnablePeerAccess); NCCL sets up its own peers
+info: p2p: NCCL transport (this rank's connections): rank 1 NET/IB (12 connections)
+info: checkpoint digest: 0.0 GiB read in 0.1 s, 83/83 cached files
+Waiting for the API: 30 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+Waiting for the API: 60 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+Waiting for the API: 91 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+info: weights: 8 readers read 156.4 GiB ahead of the loader
+info: glm: 281 linears packed (8/16 bits), 3.42 GiB freed
+warning: opt-in prompt numerics: absorb/expand tensor cores (TF_GLM_ABSORB_MMA), packed 8-bit linears on bf16 rows
+info: dflash2: drafter from /dflash2 (CC BY-NC-ND 4.0: non-commercial use only), linears at 4 bits, 0.57 GiB on the device
+info: RoCE all-gather: 2 HCA(s), shards up to 4096 KiB by RDMA writes
+info: the room this rank reports counts the 1.05 GiB free on the per-CPU page lists beyond their resting level (MemAvailable does not)
+info: the CUDA memory budget counts the 1.05 GiB free on the per-CPU page lists beyond their resting level (MemAvailable does not)
+Waiting for the API: 121 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+info: prompt cache: 5.4 GiB of device pages and 0.0 GiB of pinned host memory a rank (0.0 GiB over the 2 ranks)
+[tensorfold] warning: non-loopback server has no API key; requests are open
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.58 GiB; 4 streams at once, the engine's own and 3 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 19.1 GiB left after a 8.0 GiB reserve; prompts in passes of up to 4096 rows, a 5.4 GiB prompt cache; own glue kernels
+[tensorfold] serving GLM-5.3-Flash at http://0.0.0.0:8888/v1 (sampling: temperature 1.0, top_p 0.95; drafts: DFlash2 (/dflash2) + copies; context: 1048576; loaded in 123.0s)
+[tensorfold] 192.168.1.130 "GET /health HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /slots HTTP/1.1" 404 -
+[tensorfold] 192.168.1.130 "GET /v1/models HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /api/v0/models HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /api/tags HTTP/1.1" 404 -
+[tensorfold] 192.168.1.130 "GET /v1/models HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /health HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /metrics HTTP/1.1" 200 -
+[tensorfold] 127.0.0.1 "GET /health HTTP/1.1" 200 -
+[I_MEMGUARD] Watching both Sparks: a stop below 2.5 GiB held 4 s (pid 1778278; MEMGUARD=0 turns it off).
+Smoke test passed: ready
+
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.58 GiB; 4 streams at once, the engine's own and 3 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 19.1 GiB left after a 8.0 GiB reserve; prompts in passes of up to 4096 rows, a 5.4 GiB prompt cache; own glue kernels
+[tensorfold] serving GLM-5.3-Flash at http://0.0.0.0:8888/v1 (sampling: temperature 1.0, top_p 0.95; drafts: DFlash2 (/dflash2) + copies; context: 1048576; loaded in 123.0s)
+info: p2p: rank 0 of 2: GPU 0 NVIDIA GB10 (0000000F:01:00.0); driver 580.159.03, CUDA driver API 13.3, NCCL 2.30.7
+Health: http://127.0.0.1:8888/health
+Logs: /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/logs/current/rank*.log
+GLM-5.3-Flash-EXL3 is now LIVE! on port 8888
+Endpoint: http://127.0.0.1:8888/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/.state/context-fit.tsv to probe again).
+KV pool: 4098 pages = 2098176 tokens shared by 4 streams (one request up to 1048576).
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.58 GiB; 4 streams at once, the engine's own and 3 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 19.1 GiB left after a 8.0 GiB reserve; prompts in passes of up to 4096 rows, a 5.4 GiB prompt cache; own glue kernels
+--- decode sweep ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 3 trials, max_tokens 250
+  1 stream(s) trial 1:   35.3 tok/s total,  35.3/stream  tok  250 rounds  111  round  60.8 ms  tok/round 2.252  accept 0.400  drafted/round 3.11
+  1 stream(s) trial 2:   35.9 tok/s total,  35.9/stream  tok  250 rounds  110  round  60.6 ms  tok/round 2.273  accept 0.408  drafted/round 3.10
+  1 stream(s) trial 3:   35.6 tok/s total,  35.6/stream  tok  250 rounds  110  round  61.0 ms  tok/round 2.273  accept 0.408  drafted/round 3.10
+  -> 1 stream(s): median 35.6 tok/s, spread 1.55%  |  round 60.82 ms, spread 0.71%  |  tokens identical  rounds [110, 111]
+  2 stream(s) trial 1:   49.4 tok/s total,  24.7/stream  tok  500 rounds  217  round  88.0 ms  tok/round 2.305  accept 0.441  drafted/round 2.95
+  2 stream(s) trial 2:   49.3 tok/s total,  24.6/stream  tok  500 rounds  217  round  87.6 ms  tok/round 2.305  accept 0.439  drafted/round 2.96
+  2 stream(s) trial 3:   49.5 tok/s total,  24.7/stream  tok  500 rounds  217  round  87.3 ms  tok/round 2.305  accept 0.441  drafted/round 2.95
+  -> 2 stream(s): median 49.4 tok/s, spread 0.45%  |  round 87.92 ms, spread 2.82%  |  tokens identical  rounds identical
+  4 stream(s) trial 1:   65.9 tok/s total,  16.5/stream  tok 1000 rounds  444  round 124.9 ms  tok/round 2.259  accept 0.500  drafted/round 2.50
+  4 stream(s) trial 2:   65.1 tok/s total,  16.3/stream  tok 1000 rounds  448  round 125.3 ms  tok/round 2.239  accept 0.490  drafted/round 2.51
+  4 stream(s) trial 3:   65.9 tok/s total,  16.5/stream  tok 1000 rounds  444  round 125.4 ms  tok/round 2.259  accept 0.498  drafted/round 2.50
+  -> 4 stream(s): median 65.9 tok/s, spread 1.28%  |  round 124.46 ms, spread 7.23%  |  tokens identical  rounds [444, 448]
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-cut040.json
+# NOISE FLOOR 1 stream(s): tok/s spread 1.55% -> a win must exceed 3.09%; round_ms spread 0.71% -> 1.42%
+# NOISE FLOOR 2 stream(s): tok/s spread 0.45% -> a win must exceed 0.90%; round_ms spread 2.82% -> 5.64%
+# NOISE FLOOR 4 stream(s): tok/s spread 1.28% -> a win must exceed 2.55%; round_ms spread 7.23% -> 14.46%
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8888
+  prose         25 tok -> sha 87fa94aff290   90 out  'The sky appears blue because sunlight is compo'
+  code          30 tok -> sha 2e49486f633d  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      19 tok -> sha 39fcf5dc3ba3   41 out  '**Necessary** spelled backwards is: **yrassece'
+  math          26 tok -> sha 690b2a33a2d6  120 out  '# 847 × 23\n\n## Method: Breaking apart 23\n\n**St'
+  zig           31 tok -> sha 60b55b74b419   48 out  '```zig\nfn sum(slice: []const u32) u32 {\n    va'
+  json          32 tok -> sha 29a950f3434c   21 out  '{"name": "Elena Marsh", "age": 34, "city": "Po'
+  boundary   10674 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45604 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/contract-cut040.json
+--- token_sha contract vs baseline ---
+  OK   prose     baseline 87fa94aff290 leg 87fa94aff290
+  OK   code      baseline 2e49486f633d leg 2e49486f633d
+  OK   spelling  baseline 39fcf5dc3ba3 leg 39fcf5dc3ba3
+  OK   math      baseline 690b2a33a2d6 leg 690b2a33a2d6
+  OK   zig       baseline 60b55b74b419 leg 60b55b74b419
+  OK   json      baseline 29a950f3434c leg 29a950f3434c
+  OK   boundary  baseline fbe213fd977e leg fbe213fd977e
+  OK   longctx   baseline fbe213fd977e leg fbe213fd977e
+  CONTRACT: IDENTICAL on all 8 prompts
+### leg cut040 done  2026-11-02T23:26:19Z

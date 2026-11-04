@@ -1,0 +1,24 @@
+[0105] patches: 105; label: 8c4ca7bd8c39
+[0105] healthy; image tensorfold-glm53-spark:8c4ca7bd8c39
+info: prompt cache: 3.6 GiB of device pages and 0.0 GiB of pinned host memory a rank (0.0 GiB over the 2 ranks)
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.29 GiB; 8 streams at once, the engine's own and 7 more taking 4098 pages of 512 rows (12.47 GiB) as they need the
+info: prompt cache: 18 tokens, resumed at 0, kept 0; 0 states, 0 MiB and 3686 MiB spare of 3687 MiB (hits 0, misses 1, evicted 0, refused 0, failed 0)
+--- the probe that reproduced #180 (untyped payload, union note)
+arguments: {"payload":{"id":7,"tags":["alpha","beta"]}}
+--- the same, streamed
+streamed arguments: {"payload":{"id":7,"tags":["alpha","beta"]}}
+valid JSON, payload type: dict
+--- a plain text argument still streams (tool without a parameter schema)
+argument deltas: 1 | arguments: {}
+valid JSON
+--- acc + replay
+[p0105] 1-stream prose: tok/s 38.7/31.1 | tok/round 2.07 | ms/round 59.9 | accepted 57% | sha 64c908210a9e
+[p0105] 1-stream code: tok/s 34.4/56.6 | tok/round 3.68 | ms/round 85.5 | accepted 75% | sha 315341215112
+[p0105] 4-stream prose, rep 0: total 80.0 tok/s | per stream 20.0 20.1 20.0 19.9 | tok/round 2.06 | ms/round 103 | accepted 62%
+[p0105] 4-stream prose, rep 1: total 80.0 tok/s | per stream 20.0 20.7 20.3 19.1 | tok/round 2.08 | ms/round 104 | accepted 63%
+R1 [sys,u1]: prompt=5999 cached=0 out=36 tool_calls=1 reasoning_len=74 4.50s
+R2 [sys,u1,a1,tool]  (the loop's next step): prompt=9279 cached=4096 out=174 tool_calls=0 reasoning_len=427 6.63s
+R3 [..., a2, u2]  (next user message, default): prompt=9330 cached=8192 out=10 tool_calls=0 reasoning_len=25 1.54s
+R4 same, clear_thinking=false: prompt=9466 cached=8192 out=16 tool_calls=0 reasoning_len=47 1.33s
+R5 same, client sends no reasoning_content: prompt=9330 cached=8192 out=10 tool_calls=0 reasoning_len=25 1.15s
+LEG0105_DONE

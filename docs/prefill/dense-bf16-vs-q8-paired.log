@@ -1,0 +1,28 @@
+---- q8 (production, already up): per-token logprobs ----
+  q8: 1051 tokens, NLL 1.50609
+---- restart into bf16 ----
+model 87.00 GiB; 4 streams at once, the engine's own and 3 more taking 2052 pages of 512 rows (6.24 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 12.7 GiB l
+  bf16: 1051 tokens, NLL 1.51002
+---- back to production q8 ----
+GLM-5.3-Flash-EXL3 is now LIVE! on port 8888
+---- paired comparison ----
+# bf16 minus q8  (positive = bf16 assigns HIGHER logprob = better)
+passage          tok     NLL a     NLL b    mean d
+  en_tech        103   1.73996   1.75905  -0.01909
+  en_narrative    91   2.11803   2.10454  +0.01349
+  python         118   0.37703   0.37467  +0.00236
+  zig            110   0.45599   0.43170  +0.02428
+  math           100   1.05926   1.06786  -0.00860
+  legal           78   1.41193   1.42886  -0.01693
+  dialogue        68   2.21090   2.22327  -0.01237
+  chinese         71   1.64807   1.64668  +0.00139
+  json           111   2.46647   2.48263  -0.01616
+  medical         69   1.58134   1.59911  -0.01777
+  history         66   1.94777   1.94612  +0.00165
+  instructions    66   1.84000   1.84776  -0.00776
+
+  tokens 1051
+  mean per-token logprob delta -0.00394  (se 0.00580, 95% CI -0.01530 .. +0.00743)
+  NLL: a 1.50609  b 1.51002
+  tokens where b better: 517 (49.2%), worse: 528 (50.2%), identical: 6 (0.6%)
+DENSE_DONE

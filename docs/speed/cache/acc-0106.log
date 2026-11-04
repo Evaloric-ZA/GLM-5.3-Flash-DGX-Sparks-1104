@@ -1,0 +1,9 @@
+[p0106] 1-stream prose: tok/s 28.2/22.2 | tok/round 2.06 | ms/round 82.9 | accepted 59% | sha 64c908210a9e
+[p0106] 1-stream code: tok/s 36.3/36.9 | tok/round 3.50 | ms/round 95.5 | accepted 75% | sha 315341215112
+[p0106] 4-stream prose, rep 0: total 50.9 tok/s | per stream 13.1 12.6 12.7 12.5 | tok/round 2.12 | ms/round 166 | accepted 62%
+[p0106] 4-stream prose, rep 1: total 65.7 tok/s | per stream 16.7 16.8 16.1 16.1 | tok/round 2.08 | ms/round 126 | accepted 62%
+R1 [sys,u1]: prompt=5999 cached=0 out=36 tool_calls=1 reasoning_len=74 4.52s
+R2 [sys,u1,a1,tool]  (the loop's next step): prompt=9279 cached=4096 out=174 tool_calls=0 reasoning_len=427 6.65s
+R3 [..., a2, u2]  (next user message, default): prompt=9330 cached=8192 out=10 tool_calls=0 reasoning_len=25 1.62s
+R4 same, clear_thinking=false: prompt=9466 cached=8192 out=16 tool_calls=0 reasoning_len=47 1.43s
+R5 same, client sends no reasoning_content: prompt=9330 cached=8192 out=10 tool_calls=0 reasoning_len=25 1.22s

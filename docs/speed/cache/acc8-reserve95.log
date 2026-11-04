@@ -1,0 +1,4 @@
+[reserve95] 6-stream rep0: total 95.4 tok/s | per stream 16.4 15.6 15.9 16.1 15.7 15.8 | tok/round 2.04 | ms/round 128 | wall 20s
+[reserve95] 6-stream rep1: total 94.4 tok/s | per stream 17.1 16.1 15.3 15.4 15.5 15.0 | tok/round 2.05 | ms/round 130 | wall 21s
+[reserve95] 8-stream rep0: total 106.4 tok/s | per stream 14.6 14.0 13.2 12.9 13.0 13.4 12.9 12.4 | tok/round 2.00 | ms/round 150 | wall 24s
+[reserve95] 8-stream rep1: total 105.4 tok/s | per stream 13.5 13.9 13.6 13.2 12.4 12.8 13.0 13.0 | tok/round 2.01 | ms/round 152 | wall 25s

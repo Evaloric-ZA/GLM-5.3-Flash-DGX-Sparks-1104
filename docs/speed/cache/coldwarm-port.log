@@ -1,0 +1,11 @@
+turn1: cached 0 ttft 4.39s
+turn2 after the warm pass: cached 4096 ttft 1.78s 'Farol da Barra, Kõpu Lighthouse, and Lindesnes Lighthouse.'
+turn2 again: cached 4096 ttft 1.77s identical answer: True
+cold control turn2: cached 4096 ttft 2.25s turn-1 answers identical: True turn-2 answers identical: False
+--- back-to-back TTFT, 6 short requests with no pause (the warm pass of each must step aside)
+  req 0 ttft 0.146s cached 0
+  req 1 ttft 0.145s cached 0
+  req 2 ttft 0.154s cached 0
+  req 3 ttft 0.147s cached 0
+  req 4 ttft 0.148s cached 0
+  req 5 ttft 0.145s cached 0

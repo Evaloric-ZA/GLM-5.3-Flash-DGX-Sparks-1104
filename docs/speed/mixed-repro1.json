@@ -1,0 +1,36 @@
+[
+ {
+  "elapsed": 70.47451281547546,
+  "decode_tokens": 800,
+  "decode_total_tps": 11.351621572676247,
+  "decode_shas": [
+   "4139e2222d03",
+   "8bc0ba3abd91"
+  ],
+  "decode_tps_each": [
+   5.704392704506674,
+   5.7513234805440865
+  ],
+  "prefill_tok": 94889,
+  "prefill_ttft": 57.506975196,
+  "prefill_tps": 1650.043315208138,
+  "prefill_cached": 0
+ },
+ {
+  "elapsed": 70.54017305374146,
+  "decode_tokens": 800,
+  "decode_total_tps": 11.341055250750735,
+  "decode_shas": [
+   "4139e2222d03",
+   "8bc0ba3abd91"
+  ],
+  "decode_tps_each": [
+   5.694782567401869,
+   5.7456672605199115
+  ],
+  "prefill_tok": 95041,
+  "prefill_ttft": 57.625941508,
+  "prefill_tps": 1649.2745717101352,
+  "prefill_cached": 0
+ }
+]

@@ -1,0 +1,15 @@
+######## MEMORY_RESERVE_GIB=8
+    taking 4098 pages of 512 rows (12.47 GiB) of 18.2 GiB left after a 8.0 GiB reserve a 4.5 GiB prompt cache taking 4098 pages of 512 rows (12.47 GiB) of 18.2 GiB left after a 8.0 GiB reserve a 4.5 GiB prompt cache 
+    KV pool: 4098 pages = 2098176 tokens shared by 4 streams (one request up to 1048576).
+  # GLM-5.3-Flash at http://127.0.0.1:8888/v1/chat/completions  (fresh random content each trial: no prefix-cache hit)
+    ~23K trial 1: 23580 tok, TTFT 13.53s -> 1742 tok/s (cached_tokens=0)
+    after load+prefill: spark3 8.3 GiB available, spark4 13.3 GiB
+######## MEMORY_RESERVE_GIB=6
+    taking 6224 pages of 512 rows (18.93 GiB) of 20.2 GiB left after a 6.0 GiB reserve taking 6224 pages of 512 rows (18.93 GiB) of 20.2 GiB left after a 6.0 GiB reserve 
+    KV pool: 6224 pages = 3186688 tokens shared by 4 streams (one request up to 1048576).
+  # GLM-5.3-Flash at http://127.0.0.1:8888/v1/chat/completions  (fresh random content each trial: no prefix-cache hit)
+    ~23K trial 1: 23580 tok, TTFT 13.69s -> 1723 tok/s (cached_tokens=0)
+    after load+prefill: spark3 6.3 GiB available, spark4 11.2 GiB
+---- back to reserve 10 ----
+GLM-5.3-Flash-EXL3 is now LIVE! on port 8888
+POOL_DONE

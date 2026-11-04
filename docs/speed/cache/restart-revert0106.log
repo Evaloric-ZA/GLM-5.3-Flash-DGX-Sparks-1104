@@ -1,0 +1,88 @@
+GLM-5.3-Flash EXL3 | TensorFold native engine (Zig) | by Mia's AI Lab
+TensorFold f350cd3e + 105 engine patches | 2x DGX Spark (GB10, sm_121), tensor parallel 2 | API :8888
+
+model: EXL3 4-bit experts, mcg codebook, vision
+8 at once | context 1048576 (auto: the window that served these settings last time (/home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/.state/context-fit.tsv))
+q8 dense, q8 head, fp8 (one shared page pool; context = one request's cap) KV | dflash2 drafts | vision 1 | reserve 9.5 GiB | port 8888
+rank 0 here, rank 1 on 10.0.34.4 | RoCE on
+
+[1/6] Check both Sparks: Linux aarch64, Docker, the NVIDIA runtime, memory, disk and ports
+[I_PLATFORM] Linux aarch64, Docker access and GPU passthrough are ready.
+[I_WORKER] spark4 reachable over ssh, aarch64, Docker with the NVIDIA runtime.
+Stopping rank 0 here (up to 45 s; requests in progress get TF_DRAIN_S to finish).
+Stopping rank 1 on 10.0.34.4.
+Stopped both ranks. Logs saved to /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/logs/glm53-spark-20261104T134015Z-531783.tar.gz (newest 10 kept).
+[I_GPU] rank 0: GPU 0: NVIDIA GB10.
+[I_GPU] rank 1: GPU 0: NVIDIA GB10 on 10.0.34.4.
+[I_RAM] rank 0: 114.2 GiB available of 121.6 GiB (0.0 GiB of it parked on the per-CPU page lists).
+[I_RAM] rank 1: 116.3 GiB available on 10.0.34.4.
+[I_DISK] Enough disk space on this Spark for what is still missing.
+[I_DISK] 10.0.34.4 needs no new space (image and weights are in place).
+[I_PORT] Port 8888 and 29583-29584 are free.
+
+[2/6] Build the TensorFold native image with 105 engine patches for sm_121, and send it to 10.0.34.4
+Image is ready: tensorfold-glm53-spark:8c4ca7bd8c39 (tf.patches=8c4ca7bd8c39)
+[I_IMAGE] 10.0.34.4 already runs this image (tensorfold-glm53-spark:8c4ca7bd8c39, 63b29155e77e).
+
+[3/6] Download or check the checkpoint and the drafter weights on both Sparks
+Checkpoint: model: EXL3 4-bit experts, mcg codebook, vision (local, mounted read-only; no download).
+DFlash2 drafter weights: CC BY-NC-ND 4.0, non-commercial. DRAFTER=mtp or DRAFTER=none serves without them.
+DFlash2 is ready: /home/zurih/.cache/aevonix-glm53/dflash2
+
+[4/6] Find the link between the Sparks and the RDMA devices it runs on
+[I_FABRIC] Link: 10.0.34.3 (enp1s0f1np1) <-> 10.0.34.4 (enp1s0f1np1); RDMA rocep1s0f1,roceP2p1s0f1 <-> rocep1s0f1,roceP2p1s0f1, RoCE v2 GID 3/3.
+[I_ROCE] Both Sparks expose /dev/infiniband; the ranks will try the RoCE all-gather path (TF_ROCE_MAX_KB=4096) and fall back to NCCL together if either cannot bring it up.
+[I_WEIGHTS] 10.0.34.4 holds the checkpoint and the drafter.
+
+[5/6] Start rank 1 on 10.0.34.4, then rank 0 here
+Ranks:
+  rank 1 on 10.0.34.4 (follows rank 0's steps, binds no port):
+    env TF_GLM_RANK=1 TF_GLM_WORLD=2 TF_CUDA_DEVICE=0 NCCL_COMM_ID=10.0.34.3:29583 /usr/local/bin/tensorfold-native serve /model --name GLM-5.3-Flash --host 0.0.0.0 --port 8888 --context 1048576 --parallel 8 --max-tokens 32768 --kv-cache fp8 --no-update-check --no-thinking --reasoning-effort high --vision --vision-max-images 50 --chat-template /templates/chat_template.jinja --drafter /dflash2 --drafter-bits 4 
+  rank 0 here (spark3), HTTP server and vision tower:
+    env TF_GLM_RANK=0 TF_GLM_WORLD=2 TF_CUDA_DEVICE=0 NCCL_COMM_ID=10.0.34.3:29583 /usr/local/bin/tensorfold-native serve /model --name GLM-5.3-Flash --host 0.0.0.0 --port 8888 --context 1048576 --parallel 8 --max-tokens 32768 --kv-cache fp8 --no-update-check --no-thinking --reasoning-effort high --vision --vision-max-images 50 --chat-template /templates/chat_template.jinja --drafter /dflash2 --drafter-bits 4 
+Started rank 1 on 10.0.34.4.
+Started rank 0 here (logs: /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/logs/run-20261104T134018Z-531500-1).
+
+[6/6] Wait for the API and run a greedy smoke test
+info: p2p: rank 0 of 2: GPU 0 NVIDIA GB10 (0000000F:01:00.0); driver 580.159.03, CUDA driver API 13.3, NCCL 2.30.7
+info: p2p: peer access: TensorFold enables none itself (no cuCtxEnablePeerAccess); NCCL sets up its own peers
+info: p2p: NCCL transport (this rank's connections): rank 1 NET/IB (12 connections)
+info: checkpoint digest: 0.0 GiB read in 0.1 s, 83/83 cached files
+info: glm_mm decode windows: 6 pipeline stages (TF_GLM_MM_STAGES)
+Waiting for the API: 31 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+Waiting for the API: 61 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+Waiting for the API: 91 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+info: weights: 8 readers read 156.4 GiB ahead of the loader
+Waiting for the API: 121 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+info: glm: 282 linears packed (8/8 bits), 3.70 GiB freed
+warning: opt-in prompt numerics: absorb/expand tensor cores (TF_GLM_ABSORB_MMA), packed 8-bit linears on bf16 rows
+info: dflash2: drafter from /dflash2 (CC BY-NC-ND 4.0: non-commercial use only), linears at 4 bits, 0.57 GiB on the device
+info: RoCE all-gather: 2 HCA(s), shards up to 4096 KiB by RDMA writes
+info: the room this rank reports counts the 0.79 GiB free on the per-CPU page lists beyond their resting level (MemAvailable does not)
+info: the CUDA memory budget counts the 0.79 GiB free on the per-CPU page lists beyond their resting level (MemAvailable does not)
+info: prompt cache: 3.2 GiB of device pages and 0.0 GiB of pinned host memory a rank (0.0 GiB over the 2 ranks)
+[tensorfold] warning: non-loopback server has no API key; requests are open
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.29 GiB; 8 streams at once, the engine's own and 7 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 18.5 GiB left after a 9.5 GiB reserve; prompts in passes of up to 4096 rows, a 3.2 GiB prompt cache; own glue kernels
+[tensorfold] serving GLM-5.3-Flash at http://0.0.0.0:8888/v1 (sampling: temperature 1.0, top_p 0.95; drafts: DFlash2 (/dflash2) + copies; context: 1048576; loaded in 127.0s)
+[tensorfold] 192.168.1.130 "GET /health HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /slots HTTP/1.1" 404 -
+[tensorfold] 192.168.1.130 "GET /v1/models HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /v1/models HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /health HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /metrics HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /v1/models HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /health HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /metrics HTTP/1.1" 200 -
+[tensorfold] 127.0.0.1 "GET /health HTTP/1.1" 200 -
+[I_MEMGUARD] Watching both Sparks: a stop below 2.5 GiB held 4 s (pid 567089; MEMGUARD=0 turns it off).
+Smoke test passed: ready
+
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.29 GiB; 8 streams at once, the engine's own and 7 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 18.5 GiB left after a 9.5 GiB reserve; prompts in passes of up to 4096 rows, a 3.2 GiB prompt cache; own glue kernels
+[tensorfold] serving GLM-5.3-Flash at http://0.0.0.0:8888/v1 (sampling: temperature 1.0, top_p 0.95; drafts: DFlash2 (/dflash2) + copies; context: 1048576; loaded in 127.0s)
+info: p2p: rank 0 of 2: GPU 0 NVIDIA GB10 (0000000F:01:00.0); driver 580.159.03, CUDA driver API 13.3, NCCL 2.30.7
+Health: http://127.0.0.1:8888/health
+Logs: /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/logs/current/rank*.log
+GLM-5.3-Flash-EXL3 is now LIVE! on port 8888
+Endpoint: http://127.0.0.1:8888/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/.state/context-fit.tsv to probe again).
+KV pool: 4098 pages = 2098176 tokens shared by 8 streams (one request up to 1048576).

@@ -1,0 +1,6 @@
+arguments: {"payload":{"id":7,"tags":["alpha","beta"]}}
+streamed arguments: {"payload":{"id":7,"tags":["alpha","beta"]}}
+valid JSON, payload type: dict
+argument deltas: 1 | arguments: {}
+valid JSON
+argument deltas: 1 | text type: str | chars: 573 | Lighthouse keepers once lived isolated lives, tending the great lamps that guided ships sa

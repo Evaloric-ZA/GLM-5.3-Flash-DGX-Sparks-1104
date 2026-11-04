@@ -1,0 +1,53 @@
+### leg upt-bf16  2026-11-03T10:18:09Z
+  set HEAD=bf16
+--- restart ---
+[safestart] 10:18:09Z verifying both ranks are stopped (worker=zurih@10.0.34.4)
+[safestart] 10:18:09Z ./stop.sh (drain, archive, kill on timeout, verified absent)
+[safestart] Stopped both ranks. Logs saved to /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/logs/glm53-spark-20261103T101813Z-152159.tar.gz (newest 10 kept).
+[safestart] both ranks absent after 1x5s - safe to start
+[safestart] 10:18:13Z ./start.sh restart
+[safestart] HEALTHY after ~135s at 10:20:24Z
+Endpoint: http://127.0.0.1:8888/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/.state/context-fit.tsv to probe again).
+KV pool: 6147 pages = 3147264 tokens shared by 4 streams (one request up to 1048576).
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.58 GiB; 4 streams at once, the engine's own and 3 more taking 6147 pages of 512 rows (18.70 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 21.1 GiB left after a 8.0 GiB reserve; prompts in passes of up to 4096 rows, a 1.2 GiB prompt cache; own glue kernels
+--- decode sweep ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 3 trials, max_tokens 250
+  1 stream(s) trial 1:   37.7 tok/s total,  37.7/stream  tok  250 rounds  120  round  52.5 ms  tok/round 2.083  accept 0.591  drafted/round 1.83
+  1 stream(s) trial 2:   38.0 tok/s total,  38.0/stream  tok  250 rounds  119  round  52.8 ms  tok/round 2.101  accept 0.590  drafted/round 1.87
+  1 stream(s) trial 3:   37.7 tok/s total,  37.7/stream  tok  250 rounds  120  round  52.8 ms  tok/round 2.083  accept 0.591  drafted/round 1.83
+  -> 1 stream(s): median 37.7 tok/s (mean 37.78 +- se 0.10, n=3), spread 0.82%  |  round p50 52.76 p95 52.77 max 52.77 ms, spread 0.58%  |  tokens identical  rounds [119, 120]
+  2 stream(s) trial 1:   53.0 tok/s total,  26.5/stream  tok  500 rounds  237  round  75.1 ms  tok/round 2.110  accept 0.618  drafted/round 1.79
+  2 stream(s) trial 2:   53.3 tok/s total,  26.7/stream  tok  500 rounds  237  round  74.8 ms  tok/round 2.110  accept 0.618  drafted/round 1.79
+  2 stream(s) trial 3:   53.3 tok/s total,  26.7/stream  tok  500 rounds  237  round  74.9 ms  tok/round 2.110  accept 0.619  drafted/round 1.78
+  -> 2 stream(s): median 53.3 tok/s (mean 53.22 +- se 0.12, n=3), spread 0.70%  |  round p50 74.87 p95 76.27 max 76.27 ms, spread 3.18%  |  tokens identical  rounds identical
+  4 stream(s) trial 1:   69.7 tok/s total,  17.4/stream  tok 1000 rounds  478  round 109.8 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  4 stream(s) trial 2:   69.5 tok/s total,  17.4/stream  tok 1000 rounds  478  round 110.4 ms  tok/round 2.097  accept 0.631  drafted/round 1.73
+  4 stream(s) trial 3:   69.7 tok/s total,  17.4/stream  tok 1000 rounds  478  round 110.0 ms  tok/round 2.097  accept 0.631  drafted/round 1.73
+  -> 4 stream(s): median 69.7 tok/s (mean 69.61 +- se 0.06, n=3), spread 0.29%  |  round p50 110.20 p95 112.75 max 112.75 ms, spread 5.14%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-upt-bf16.json
+# NOISE FLOOR 1 stream(s): tok/s spread 0.82% -> a win must exceed 1.64%; round_ms spread 0.58% -> 1.15%
+# NOISE FLOOR 2 stream(s): tok/s spread 0.70% -> a win must exceed 1.41%; round_ms spread 3.18% -> 6.35%
+# NOISE FLOOR 4 stream(s): tok/s spread 0.29% -> a win must exceed 0.58%; round_ms spread 5.14% -> 10.29%
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8888
+  prose         25 tok -> sha 87fa94aff290   90 out  'The sky appears blue because sunlight is compo'
+  code          30 tok -> sha 2e49486f633d  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      19 tok -> sha 39fcf5dc3ba3   41 out  '**Necessary** spelled backwards is: **yrassece'
+  math          26 tok -> sha 690b2a33a2d6  120 out  '# 847 × 23\n\n## Method: Breaking apart 23\n\n**St'
+  zig           31 tok -> sha 60b55b74b419   48 out  '```zig\nfn sum(slice: []const u32) u32 {\n    va'
+  json          32 tok -> sha 29a950f3434c   21 out  '{"name": "Elena Marsh", "age": 34, "city": "Po'
+  boundary   10674 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45604 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/contract-upt-bf16.json
+--- token_sha contract vs baseline ---
+  OK   prose     baseline 87fa94aff290 leg 87fa94aff290
+  OK   code      baseline 2e49486f633d leg 2e49486f633d
+  OK   spelling  baseline 39fcf5dc3ba3 leg 39fcf5dc3ba3
+  OK   math      baseline 690b2a33a2d6 leg 690b2a33a2d6
+  OK   zig       baseline 60b55b74b419 leg 60b55b74b419
+  OK   json      baseline 29a950f3434c leg 29a950f3434c
+  OK   boundary  baseline fbe213fd977e leg fbe213fd977e
+  OK   longctx   baseline fbe213fd977e leg fbe213fd977e
+  CONTRACT: IDENTICAL on all 8 prompts
+### leg upt-bf16 done  2026-11-03T10:22:35Z

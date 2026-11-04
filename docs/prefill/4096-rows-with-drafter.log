@@ -1,0 +1,28 @@
+patches: 95, tag 503f271d5532
+#20 382.2 zig build install native grammar: 382 s
+######## rows4096-drafter
+  model 83.58 GiB
+# GLM-5.3-Flash at http://127.0.0.1:8888/v1/chat/completions  (fresh random content each trial: no prefix-cache hit)
+  ~23K trial 1: 23580 tok, TTFT 13.59s -> 1735 tok/s (cached_tokens=0)
+  ~23K trial 2: 23553 tok, TTFT 13.56s -> 1737 tok/s (cached_tokens=0)
+  ~23K trial 3: 23544 tok, TTFT 13.64s -> 1727 tok/s (cached_tokens=0)
+  ~95K trial 1: 95123 tok, TTFT 54.65s -> 1741 tok/s (cached_tokens=0)
+  ~95K trial 2: 94967 tok, TTFT 54.22s -> 1752 tok/s (cached_tokens=0)
+  ~95K trial 3: 95012 tok, TTFT 53.91s -> 1762 tok/s (cached_tokens=0)
+  NLL 0.7523
+  answers sha 11ceddde19d4
+# chunk-boundary prompts (DFlash2 on): token counts around 2048/4096 rows and well past
+     300 words ->    1169 prompt tok, reply 'ok'
+     520 words ->    2001 prompt tok, reply 'ok'
+     540 words ->    2075 prompt tok, reply 'ok'
+    1080 words ->    4113 prompt tok, reply 'ok'
+    1100 words ->    4189 prompt tok, reply 'ok'
+    2200 words ->    8350 prompt tok, reply 'ok'
+    2800 words ->   10637 prompt tok, reply 'ok'
+    6000 words ->   22788 prompt tok, reply 'ok'
+   12000 words ->   45599 prompt tok, reply 'ok'
+# failures: 0
+# decode + draft acceptance, 1 stream
+  decode: 300 tok in 8.41s -> 35.7 tok/s
+  draft acceptance (last 6 requests): 157/299 = 0.525
+VAL4096_DONE

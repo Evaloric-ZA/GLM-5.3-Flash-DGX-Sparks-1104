@@ -1,0 +1,50 @@
+### bimodal probe  10:12:00Z
+  set TF_GLM_DFLASH2_TRACE=1 (per-window dft records on rank 0's stdout)
+[safestart] 10:12:00Z verifying both ranks are stopped (worker=zurih@10.0.34.4)
+[safestart] 10:12:00Z ./stop.sh (drain, archive, kill on timeout, verified absent)
+[safestart] both ranks absent after 1x5s - safe to start
+[safestart] 10:12:01Z ./start.sh restart
+[safestart] HEALTHY after ~140s at 10:14:16Z
+Endpoint: http://127.0.0.1:8888/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/.state/context-fit.tsv to probe again).
+KV pool: 6147 pages = 3147264 tokens shared by 4 streams (one request up to 1048576).
+  [tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.29 GiB; 4 streams at once, the engine's own and 3 more taking 6147 pages of 512 rows (18.70 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 21.4 GiB left after a 8.0 GiB reserve; prompts in passes of up to 4096 rows, a 1.5 GiB prompt cache; own glue kernels
+image=tensorfold-glm53-spark:eeb98fe202ff
+--- samplers (2 s: free -m + nvidia-smi) ---
+--- the bimodal block: 4 streams x 10 trials, exactly as coverage.sh runs it ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 10 trials, max_tokens 250
+  4 stream(s) trial 1:   70.8 tok/s total,  17.7/stream  tok 1000 rounds  478  round 107.4 ms  tok/round 2.097  accept 0.637  drafted/round 1.71
+  4 stream(s) trial 2:   71.0 tok/s total,  17.8/stream  tok 1000 rounds  478  round 107.9 ms  tok/round 2.097  accept 0.635  drafted/round 1.72
+  4 stream(s) trial 3:   71.1 tok/s total,  17.8/stream  tok 1000 rounds  478  round 107.7 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  4 stream(s) trial 4:   71.1 tok/s total,  17.8/stream  tok 1000 rounds  478  round 107.7 ms  tok/round 2.097  accept 0.634  drafted/round 1.72
+  4 stream(s) trial 5:   70.9 tok/s total,  17.7/stream  tok 1000 rounds  478  round 108.2 ms  tok/round 2.097  accept 0.634  drafted/round 1.72
+  4 stream(s) trial 6:   70.8 tok/s total,  17.7/stream  tok 1000 rounds  478  round 108.2 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  4 stream(s) trial 7:   71.1 tok/s total,  17.8/stream  tok 1000 rounds  478  round 107.8 ms  tok/round 2.097  accept 0.634  drafted/round 1.72
+  4 stream(s) trial 8:   71.1 tok/s total,  17.8/stream  tok 1000 rounds  478  round 107.8 ms  tok/round 2.097  accept 0.634  drafted/round 1.72
+  4 stream(s) trial 9:   71.0 tok/s total,  17.8/stream  tok 1000 rounds  478  round 107.8 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  4 stream(s) trial 10:   71.1 tok/s total,  17.8/stream  tok 1000 rounds  478  round 107.7 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  -> 4 stream(s): median 71.1 tok/s (mean 71.01 +- se 0.04, n=10), spread 0.51%  |  round p50 107.49 p95 112.00 max 112.38 ms, spread 6.93%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-bimodal-c4.json
+# NOISE FLOOR 4 stream(s): tok/s spread 0.51% -> a win must exceed 1.02%; round_ms spread 6.93% -> 13.86%
+--- the stable instrument, same start: the leg-sweep 1/2/4 x3 ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 3 trials, max_tokens 250
+  1 stream(s) trial 1:   38.5 tok/s total,  38.5/stream  tok  250 rounds  120  round  51.4 ms  tok/round 2.083  accept 0.591  drafted/round 1.83
+  1 stream(s) trial 2:   38.8 tok/s total,  38.8/stream  tok  250 rounds  120  round  51.3 ms  tok/round 2.083  accept 0.591  drafted/round 1.83
+  1 stream(s) trial 3:   39.1 tok/s total,  39.1/stream  tok  250 rounds  119  round  51.0 ms  tok/round 2.101  accept 0.601  drafted/round 1.83
+  -> 1 stream(s): median 38.8 tok/s (mean 38.79 +- se 0.16, n=3), spread 1.40%  |  round p50 51.28 p95 51.45 max 51.45 ms, spread 0.86%  |  tokens identical  rounds [119, 120]
+  2 stream(s) trial 1:   54.9 tok/s total,  27.4/stream  tok  500 rounds  236  round  73.3 ms  tok/round 2.119  accept 0.625  drafted/round 1.78
+  2 stream(s) trial 2:   55.0 tok/s total,  27.5/stream  tok  500 rounds  235  round  73.1 ms  tok/round 2.128  accept 0.629  drafted/round 1.79
+  2 stream(s) trial 3:   54.6 tok/s total,  27.3/stream  tok  500 rounds  237  round  72.6 ms  tok/round 2.110  accept 0.619  drafted/round 1.78
+  -> 2 stream(s): median 54.9 tok/s (mean 54.82 +- se 0.14, n=3), spread 0.88%  |  round p50 73.15 p95 74.11 max 74.11 ms, spread 3.91%  |  tokens identical  rounds [235, 236, 237]
+  4 stream(s) trial 1:   70.9 tok/s total,  17.7/stream  tok 1000 rounds  478  round 107.9 ms  tok/round 2.097  accept 0.636  drafted/round 1.71
+  4 stream(s) trial 2:   71.1 tok/s total,  17.8/stream  tok 1000 rounds  478  round 107.6 ms  tok/round 2.097  accept 0.634  drafted/round 1.72
+  4 stream(s) trial 3:   71.1 tok/s total,  17.8/stream  tok 1000 rounds  478  round 107.6 ms  tok/round 2.097  accept 0.634  drafted/round 1.72
+  -> 4 stream(s): median 71.1 tok/s (mean 71.02 +- se 0.06, n=3), spread 0.28%  |  round p50 107.89 p95 110.52 max 110.52 ms, spread 5.27%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-bimodal-sweep.json
+# NOISE FLOOR 1 stream(s): tok/s spread 1.40% -> a win must exceed 2.81%; round_ms spread 0.86% -> 1.71%
+# NOISE FLOOR 2 stream(s): tok/s spread 0.88% -> a win must exceed 1.76%; round_ms spread 3.91% -> 7.82%
+# NOISE FLOOR 4 stream(s): tok/s spread 0.28% -> a win must exceed 0.55%; round_ms spread 5.27% -> 10.53%
+--- harvest dft records since 2026-11-03T10:14:16Z ---
+  7282 dft records; block ended 10:16:37Z
+  trial span T0=1793700856.192699174 T1=1793700997.064358506 (epoch s); sampler in docs/speed/bimodal-sampler.csv
+### probe done  10:18:09Z

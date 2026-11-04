@@ -1,0 +1,24 @@
+{
+ "label": "q4-absorb",
+ "nll": 0.8005187164232569,
+ "nll_error": null,
+ "nll_per_passage": [
+  0.6618604262669882,
+  0.8335720771966979,
+  0.25417996630256556,
+  2.2560405450708725
+ ],
+ "answers_sha": "28d50949f647",
+ "answers": [
+  "69",
+  "Canberra",
+  "```python\ns[::-1]\n```",
+  "0.9",
+  "Photosynthesis",
+  "17",
+  "**y**-**r**-**a**-**s**-**s**-**e**-**c**-**e**-**n**\n\n**\"yrasssecen\"**",
+  "A mutex protects against concurrent access to shared resources by multiple threads.",
+  "12",
+  "K"
+ ]
+}

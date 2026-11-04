@@ -1,0 +1,31 @@
+[port] patches: 104; label: 1fdae27149cc
+[port] healthy; image tensorfold-glm53-spark:1fdae27149cc
+info: prompt cache: 3.6 GiB of device pages and 0.0 GiB of pinned host memory a rank (0.0 GiB over the 2 ranks)
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.29 GiB; 8 streams at once, the engine's own and 7 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 18.9 GiB left after a 9.5 GiB r
+info: prompt cache: 18 tokens, resumed at 0, kept 0; 0 states, 0 MiB and 3678 MiB spare of 3678 MiB (hits 0, misses 1, evicted 0, refused 0, failed 0)
+--- replay (quiet engine; the script waits 3 s after each answer)
+R1 [sys,u1]: prompt=5999 cached=0 out=36 tool_calls=1 reasoning_len=74 4.53s
+R2 [sys,u1,a1,tool]  (the loop's next step): prompt=9279 cached=4096 out=174 tool_calls=0 reasoning_len=427 6.66s
+R3 [..., a2, u2]  (next user message, default): prompt=9330 cached=8192 out=10 tool_calls=0 reasoning_len=25 1.61s
+R4 same, clear_thinking=false: prompt=9466 cached=8192 out=16 tool_calls=0 reasoning_len=47 1.36s
+R5 same, client sends no reasoning_content: prompt=9330 cached=8192 out=10 tool_calls=0 reasoning_len=25 1.13s
+--- warm pass log lines since restart
+[tensorfold] next turn: background prefill of 20 tokens stepped aside (queued 0.00s)
+[tensorfold] next turn: background prefill of 6036 tokens stepped aside: other work came first (queued 0.00s)
+[tensorfold] next turn: background prefill of 9317 tokens done (queued 0.00s)
+[tensorfold] next turn: background prefill of 9333 tokens stepped aside: other work came first (queued 0.00s)
+[tensorfold] next turn: background prefill of 9482 tokens stepped aside: other work came first (queued 0.00s)
+--- acc (back-to-back requests: each reply is followed at once by the next request)
+[port] 1-stream prose: tok/s 38.4/38.4 | tok/round 2.07 | ms/round 53.8 | accepted 57% | sha 64c908210a9e
+[port] 1-stream code: tok/s 56.6/56.6 | tok/round 3.77 | ms/round 66.6 | accepted 75% | sha 315341215112
+[port] 4-stream prose, rep 0: total 81.3 tok/s | per stream 21.2 21.2 19.9 19.0 | tok/round 2.16 | ms/round 106 | accepted 64%
+[port] 4-stream prose, rep 1: total 78.9 tok/s | per stream 20.5 19.5 19.4 19.5 | tok/round 1.99 | ms/round 101 | accepted 60%
+--- stepped-aside count during acc
+17
+18
+--- cold vs warm greedy: the replay's final prompt answered cold (fresh wording) and after a completed warm pass
+Traceback (most recent call last):
+  File "<stdin>", line 7, in <module>
+NameError: name 'i' is not defined. Did you mean: 'id'?
+[port] health memory {'active': 108435431480, 'cache': 0, 'peak': 108938747960}
+PORT_DONE

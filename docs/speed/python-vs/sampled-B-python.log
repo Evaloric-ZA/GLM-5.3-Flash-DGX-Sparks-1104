@@ -1,0 +1,4 @@
+[B-python] 1-stream prose T=0.7 rep 0: 29.6 tok/s | tok/round 2.29 | ms/round 77.2 | accepted 48% | 600 tokens
+[B-python] 1-stream prose T=0.7 rep 1: 29.6 tok/s | tok/round 2.29 | ms/round 77.3 | accepted 48% | 600 tokens
+[B-python] 4-stream prose T=0.7 rep 0: total 67.7 tok/s | per stream 17.0 17.0 17.0 16.8 | tok/round 2.27 | ms/round 134 | accepted 49%
+[B-python] 4-stream prose T=0.7 rep 1: total 71.0 tok/s | per stream 18.5 17.8 17.4 17.3 | tok/round 2.34 | ms/round 131 | accepted 52%

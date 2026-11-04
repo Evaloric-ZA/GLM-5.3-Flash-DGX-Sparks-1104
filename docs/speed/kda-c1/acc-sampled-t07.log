@@ -1,0 +1,8 @@
+[A] 1-stream prose T=0.7 rep 0: 36.7 tok/s | tok/round 1.98 | ms/round 53.9 | accepted 53% | 600 tokens
+[A] 1-stream prose T=0.7 rep 1: 38.9 tok/s | tok/round 2.16 | ms/round 55.4 | accepted 54% | 600 tokens
+[A] 4-stream prose T=0.7 rep 0: total 76.1 tok/s | per stream 19.4 19.2 19.0 18.5 | tok/round 2.05 | ms/round 107 | accepted 60%
+[A] 4-stream prose T=0.7 rep 1: total 75.4 tok/s | per stream 19.6 19.1 18.2 18.4 | tok/round 2.01 | ms/round 106 | accepted 61%
+[B] 1-stream prose T=0.7 rep 0: 21.3 tok/s | tok/round 2.31 | ms/round 108.3 | accepted 50% | 600 tokens
+[B] 1-stream prose T=0.7 rep 1: 21.3 tok/s | tok/round 2.31 | ms/round 108.3 | accepted 50% | 600 tokens
+[B] 4-stream prose T=0.7 rep 0: total 31.3 tok/s | per stream 8.1 7.7 7.8 7.7 | tok/round 2.32 | ms/round 296 | accepted 52%
+[B] 4-stream prose T=0.7 rep 1: total 30.3 tok/s | per stream 7.7 7.6 7.5 7.6 | tok/round 2.30 | ms/round 303 | accepted 50%

@@ -1,0 +1,179 @@
+info: p2p: rank 0 of 2: GPU 0 NVIDIA GB10 (0000000F:01:00.0); driver 580.159.03, CUDA driver API 13.3, NCCL 2.30.7
+info: p2p: peer access: TensorFold enables none itself (no cuCtxEnablePeerAccess); NCCL sets up its own peers
+info: p2p: NCCL transport (this rank's connections): rank 1 NET/IB (12 connections)
+info: checkpoint digest: 0.0 GiB read in 0.1 s, 83/83 cached files
+info: glm_mm decode windows: 6 pipeline stages (TF_GLM_MM_STAGES)
+info: weights: 8 readers read 156.4 GiB ahead of the loader
+info: glm: 282 linears packed (8/8 bits), 3.70 GiB freed
+warning: opt-in prompt numerics: absorb/expand tensor cores (TF_GLM_ABSORB_MMA), packed 8-bit linears on bf16 rows
+info: dflash2: drafter from /dflash2 (CC BY-NC-ND 4.0: non-commercial use only), linears at 4 bits, 0.57 GiB on the device
+info: RoCE all-gather: 2 HCA(s), shards up to 4096 KiB by RDMA writes
+info: the room this rank reports counts the 0.78 GiB free on the per-CPU page lists beyond their resting level (MemAvailable does not)
+info: the CUDA memory budget counts the 0.78 GiB free on the per-CPU page lists beyond their resting level (MemAvailable does not)
+info: prompt cache: 3.6 GiB of device pages and 0.0 GiB of pinned host memory a rank (0.0 GiB over the 2 ranks)
+[tensorfold] warning: non-loopback server has no API key; requests are open
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.29 GiB; 8 streams at once, the engine's own and 7 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 18.9 GiB left after a 9.5 GiB reserve; prompts in passes of up to 4096 rows, a 3.6 GiB prompt cache; own glue kernels
+[tensorfold] serving GLM-5.3-Flash at http://0.0.0.0:8888/v1 (sampling: temperature 1.0, top_p 0.95; drafts: DFlash2 (/dflash2) + copies; context: 1048576; loaded in 128.4s)
+info: prompt cache: 18 tokens, resumed at 0, kept 0; 0 states, 0 MiB and 3692 MiB spare of 3693 MiB (hits 0, misses 1, evicted 0, refused 0, failed 0)
+info: kv pool idle: promised 0, free 4098 + store 0 == total 4098
+[tensorfold] done chatcmpl-51094dadd81731827a4ef395d625962a prompt=18 cached=0 thinking=False effort=none tokens=2 sha=46670d94e046 finish=stop rounds=1 accepted=1/1 ttft=0.129 decode=0.048 elapsed=0.178 queued=0.000 tok/s=20.7
+[tensorfold] next turn: background prefill of 20 tokens stepped aside (queued 0.00s)
+info: prompt cache: 4438 tokens, resumed at 0, kept 1; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 3, evicted 0, refused 0, failed 0)
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 4, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-085e5917627a5db3a23e81853393d505 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.674 decode=0.000 elapsed=0.674 queued=0.514 tok/s=0.0
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.06s)
+[tensorfold] done chatcmpl-454f8fa054340984de3ef6a1d43bbe42 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.203 decode=0.000 elapsed=0.203 queued=0.052 tok/s=0.0
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 5, evicted 0, refused 0, failed 0)
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+[tensorfold] done chatcmpl-fc6e0dfc2711f523d484d10561919a28 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.189 decode=0.000 elapsed=0.189 queued=0.039 tok/s=0.0
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 6, evicted 0, refused 0, failed 0)
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.09s)
+[tensorfold] done chatcmpl-080bc47d1b5455b599293e1f1fd78adc prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.228 decode=0.000 elapsed=0.228 queued=0.077 tok/s=0.0
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 7, evicted 0, refused 0, failed 0)
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+[tensorfold] done chatcmpl-be5039605100fc999428b33139adbb30 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.194 decode=0.000 elapsed=0.194 queued=0.044 tok/s=0.0
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 8, evicted 0, refused 0, failed 0)
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+[tensorfold] done chatcmpl-13cc9028fcf2ac4bf216bafe35dc5bf5 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.196 decode=0.000 elapsed=0.196 queued=0.043 tok/s=0.0
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 9, evicted 0, refused 0, failed 0)
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+[tensorfold] done chatcmpl-5838cdd3d74d176abef267822168d83f prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.191 decode=0.000 elapsed=0.191 queued=0.039 tok/s=0.0
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 10, evicted 0, refused 0, failed 0)
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.07s)
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 11, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-bd67c918fe4674ad7c2a2a93b59a5fec prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.219 decode=0.000 elapsed=0.219 queued=0.057 tok/s=0.0
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+[tensorfold] done chatcmpl-4b9b18c06f3537f1fa891fd3634aef7a prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.194 decode=0.000 elapsed=0.194 queued=0.041 tok/s=0.0
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 12, evicted 0, refused 0, failed 0)
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 13, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-0cf378327283092dda8f1ab4d4a0d4d1 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.190 decode=0.000 elapsed=0.190 queued=0.040 tok/s=0.0
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 14, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-2641e1216696863b5490a2373806c5fb prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.195 decode=0.000 elapsed=0.195 queued=0.041 tok/s=0.0
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 15, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-ef832b24a1964158394ba3a93c1fde68 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.190 decode=0.000 elapsed=0.190 queued=0.039 tok/s=0.0
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.06s)
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 16, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-bfbb6cb8e91e7d5898f9d356420d4a40 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.196 decode=0.000 elapsed=0.196 queued=0.044 tok/s=0.0
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 17, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-3c69cf47fe91e5fcea31b052cbfdfb17 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.190 decode=0.000 elapsed=0.190 queued=0.039 tok/s=0.0
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.06s)
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 18, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-09a8909d1f06570426e43236a32e96b1 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.195 decode=0.000 elapsed=0.195 queued=0.045 tok/s=0.0
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.06s)
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 19, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-a8f9cf4681a18b6b06ba039babea0cdf prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.204 decode=0.000 elapsed=0.204 queued=0.051 tok/s=0.0
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 20, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-7484191e2f737ad6421e9f4e5221a013 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.194 decode=0.000 elapsed=0.194 queued=0.042 tok/s=0.0
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 21, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-0e155803dd841bbb58cf8128fe95b522 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.199 decode=0.000 elapsed=0.199 queued=0.044 tok/s=0.0
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.08s)
+[tensorfold] done chatcmpl-f02ace0a8aa3e96eb47164bfef546539 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.219 decode=0.000 elapsed=0.220 queued=0.069 tok/s=0.0
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 22, evicted 0, refused 0, failed 0)
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+[tensorfold] done chatcmpl-b7a627232adcf1eebd2a78078a810130 prompt=20 cached=0 thinking=False effort=none tokens=1 sha=f4808239347d finish=length rounds=0 accepted=0/0 ttft=0.197 decode=0.000 elapsed=0.197 queued=0.044 tok/s=0.0
+info: prompt cache: 20 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 23, evicted 0, refused 0, failed 0)
+[tensorfold] next turn: background prefill of 22 tokens stepped aside: other work came first (queued 0.05s)
+info: prompt cache: 18 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 24, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-dd36b9e82b48258030824a3369e43446 prompt=18 cached=0 thinking=False effort=none tokens=2 sha=46670d94e046 finish=stop rounds=1 accepted=1/1 ttft=0.194 decode=0.069 elapsed=0.263 queued=0.053 tok/s=14.5
+[tensorfold] next turn: background prefill of 20 tokens stepped aside: other work came first (queued 0.06s)
+info: prompt cache: 29 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 25, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-3f684fa95123878216d6c14d226d6ec6 prompt=4438 cached=0 thinking=True effort=low tokens=286 sha=50dc5520c714 finish=stop rounds=131 accepted=155/248 ttft=3.083 decode=12.937 elapsed=16.020 queued=0.000 tok/s=22.0 seed=7740602370332568672
+[tensorfold] next turn: background prefill of 4725 tokens stepped aside: other work came first (queued 0.06s)
+info: prompt cache: 3726 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 26, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-e7f7bf4495cb639cf06d367249f41ef8 prompt=3726 cached=0 thinking=True effort=low tokens=119 sha=703c164ea159 finish=stop rounds=29 accepted=90/102 ttft=2.386 decode=2.502 elapsed=4.887 queued=0.001 tok/s=47.2 seed=1535388580269681480
+[tensorfold] next turn: background prefill of 3846 tokens stepped aside: other work came first (queued 0.04s)
+info: dflash2: 256 rounds, 0 contexts restarted
+info: kv pool idle: promised 0, free 4098 + store 0 == total 4098
+[tensorfold] done chatcmpl-ebd2879a1a8791e08ed169dc85609c4c prompt=29 cached=0 thinking=False effort=none tokens=600 sha=64c908210a9e finish=length rounds=291 accepted=308/527 ttft=0.235 decode=21.264 elapsed=21.499 queued=0.054 tok/s=28.2
+[tensorfold] next turn: background prefill of 630 tokens stepped aside: other work came first (queued 0.00s)
+info: prompt cache: 29 tokens, resumed at 0, kept 0; 1 states, 260 MiB and 3432 MiB spare of 3693 MiB (hits 0, misses 27, evicted 0, refused 0, failed 0)
+info: prompt cache: 10795 tokens, resumed at 0, kept 1; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 0, misses 28, evicted 0, refused 0, failed 0)
+info: dflash2: 512 rounds, 0 contexts restarted
+[tensorfold] done chatcmpl-00adafbbbdfa6279b9ab4319841af5fa prompt=10795 cached=0 thinking=True effort=low tokens=416 sha=b383a26f4ad0 finish=stop rounds=205 accepted=211/340 ttft=8.853 decode=15.769 elapsed=24.621 queued=0.006 tok/s=26.3 seed=4688418206089201414
+[tensorfold] next turn: background prefill of 11212 tokens stepped aside: other work came first (queued 0.04s)
+[tensorfold] done chatcmpl-6919844907204d3e8b6cfb47e2be0225 prompt=29 cached=0 thinking=False effort=none tokens=600 sha=64c908210a9e finish=length rounds=291 accepted=308/518 ttft=0.164 decode=27.007 elapsed=27.171 queued=0.000 tok/s=22.2
+info: kv pool idle: promised 0, free 4098 + store 0 == total 4098
+[tensorfold] next turn: background prefill of 630 tokens stepped aside: other work came first (queued 0.00s)
+info: prompt cache: 36 tokens, resumed at 0, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 0, misses 29, evicted 0, refused 0, failed 0)
+info: prompt cache: 11248 tokens, resumed at 8192, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 1, misses 29, evicted 0, refused 0, failed 0)
+info: dflash2: 768 rounds, 0 contexts restarted
+[tensorfold] done chatcmpl-a2b2f7f4f05eeae0cf7c6949ad8351f2 prompt=36 cached=0 thinking=False effort=none tokens=600 sha=315341215112 finish=length rounds=170 accepted=429/571 ttft=0.184 decode=16.514 elapsed=16.698 queued=0.000 tok/s=36.3
+[tensorfold] next turn: background prefill of 637 tokens stepped aside: other work came first (queued 0.05s)
+info: prompt cache: 36 tokens, resumed at 0, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 1, misses 30, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-55467d9506d5c948e14ab6b6cea82742 prompt=11248 cached=8192 thinking=True effort=low tokens=633 sha=6d6be12252f8 finish=stop rounds=305 accepted=328/576 ttft=1.893 decode=27.178 elapsed=29.071 queued=0.035 tok/s=23.3 seed=7958124044834441871
+[tensorfold] next turn: background prefill of 11881 tokens stepped aside: other work came first (queued 0.09s)
+info: prompt cache: 5388 tokens, resumed at 4096, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 2, misses 30, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-09ba14d376cc06d69ab93be665bd02b5 prompt=36 cached=0 thinking=False effort=none tokens=600 sha=315341215112 finish=length rounds=173 accepted=426/567 ttft=0.223 decode=16.227 elapsed=16.450 queued=0.041 tok/s=36.9
+[tensorfold] next turn: background prefill of 637 tokens stepped aside: other work came first (queued 0.06s)
+info: prompt cache: 45 tokens, resumed at 0, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 2, misses 34, evicted 0, refused 0, failed 0)
+info: prompt cache: 47 tokens, resumed at 0, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 2, misses 34, evicted 0, refused 0, failed 0)
+info: prompt cache: 47 tokens, resumed at 0, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 2, misses 34, evicted 0, refused 0, failed 0)
+info: prompt cache: 47 tokens, resumed at 0, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 2, misses 34, evicted 0, refused 0, failed 0)
+info: dflash2: 1024 rounds, 0 contexts restarted
+[tensorfold] done chatcmpl-fb933c2ac454e04c086b3de2316d6b38 prompt=5388 cached=4096 thinking=True effort=low tokens=286 sha=559196105f0b finish=stop rounds=104 accepted=182/269 ttft=1.054 decode=14.538 elapsed=15.592 queued=0.032 tok/s=19.6 seed=3160166423523671587
+[tensorfold] next turn: background prefill of 5675 tokens stepped aside: other work came first (queued 0.10s)
+info: prompt cache: 5670 tokens, resumed at 4096, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 3, misses 34, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-cf12aa88fbb1effc4f7df7ac27132df0 prompt=5670 cached=4096 thinking=True effort=low tokens=272 sha=649e7249a136 finish=stop rounds=68 accepted=204/206 ttft=1.200 decode=9.245 elapsed=10.445 queued=0.073 tok/s=29.3 seed=717779011684157044
+[tensorfold] next turn: background prefill of 5943 tokens stepped aside: other work came first (queued 0.09s)
+info: prompt cache: 5952 tokens, resumed at 4096, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 4, misses 34, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-2d12599fab4cd2d08196e69b03fb6171 prompt=5952 cached=4096 thinking=True effort=low tokens=12 sha=5096fe42a328 finish=stop rounds=4 accepted=8/11 ttft=1.331 decode=0.548 elapsed=1.879 queued=0.060 tok/s=20.1 seed=1270682724087607038
+[tensorfold] next turn: background prefill of 5965 tokens stepped aside: other work came first (queued 0.11s)
+info: prompt cache: 6009 tokens, resumed at 4096, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 5, misses 34, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-ba1e3afc65f5bbc44f49029fa9b76502 prompt=6009 cached=4096 thinking=True effort=low tokens=13 sha=d7eddfe019dc finish=stop rounds=4 accepted=9/14 ttft=1.379 decode=0.601 elapsed=1.980 queued=0.084 tok/s=20.0 seed=4521424580392601127
+[tensorfold] next turn: background prefill of 6023 tokens stepped aside: other work came first (queued 0.10s)
+info: prompt cache: 7397 tokens, resumed at 4096, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 6, misses 34, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-25e5692a5dc8c584898149cb5014aeec prompt=47 cached=0 thinking=False effort=none tokens=400 sha=346b64c5973c finish=length rounds=182 accepted=217/349 ttft=0.716 decode=30.499 elapsed=31.216 queued=0.046 tok/s=13.1
+[tensorfold] next turn: background prefill of 448 tokens stepped aside: other work came first (queued 0.13s)
+[tensorfold] done chatcmpl-c0cdacc1edfa7aa5294597dd2947314c prompt=45 cached=0 thinking=False effort=none tokens=400 sha=b54cae636331 finish=length rounds=187 accepted=212/337 ttft=0.251 decode=31.589 elapsed=31.840 queued=0.047 tok/s=12.6
+[tensorfold] next turn: background prefill of 446 tokens stepped aside: other work came first (queued 0.10s)
+[tensorfold] done chatcmpl-ce26a5b2755502633bea81b5f4da102c prompt=47 cached=0 thinking=False effort=none tokens=400 sha=e9608abba65d finish=length rounds=188 accepted=211/324 ttft=0.481 decode=31.461 elapsed=31.942 queued=0.046 tok/s=12.7
+[tensorfold] next turn: background prefill of 448 tokens stepped aside: other work came first (queued 0.06s)
+[tensorfold] done chatcmpl-db75f50d651d41f4bcdf0b481be0e98b prompt=47 cached=0 thinking=False effort=none tokens=400 sha=6886bc5de512 finish=length rounds=199 accepted=201/346 ttft=0.961 decode=31.972 elapsed=32.933 queued=0.046 tok/s=12.5
+[tensorfold] next turn: background prefill of 448 tokens stepped aside: other work came first (queued 0.05s)
+info: prompt cache: 45 tokens, resumed at 0, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 6, misses 38, evicted 0, refused 0, failed 0)
+info: prompt cache: 47 tokens, resumed at 0, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 6, misses 38, evicted 0, refused 0, failed 0)
+info: prompt cache: 47 tokens, resumed at 0, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 6, misses 38, evicted 0, refused 0, failed 0)
+info: prompt cache: 47 tokens, resumed at 0, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 6, misses 38, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-c6236c573c7fc0f882207cf1c7e3bfbd prompt=7397 cached=4096 thinking=True effort=low tokens=267 sha=12788bbd6579 finish=stop rounds=76 accepted=191/246 ttft=2.055 decode=10.391 elapsed=12.446 queued=0.072 tok/s=25.6 seed=5372110992508287984
+[tensorfold] next turn: background prefill of 7665 tokens stepped aside: other work came first (queued 0.12s)
+info: prompt cache: 7712 tokens, resumed at 4096, kept 0; 2 states, 528 MiB and 3164 MiB spare of 3693 MiB (hits 7, misses 38, evicted 0, refused 0, failed 0)
+[tensorfold] done chatcmpl-d56cf88c76cfa8735a912bd8caf0305f prompt=7712 cached=4096 thinking=True effort=low tokens=4 sha=c0db46feb9ea finish=stop rounds=1 accepted=2/2 ttft=2.236 decode=0.131 elapsed=2.367 queued=0.088 tok/s=23.0 seed=6656210544924137075
+[tensorfold] next turn: background prefill of 7716 tokens stepped aside: other work came first (queued 0.10s)
+info: dflash2: 1280 rounds, 0 contexts restarted
+[tensorfold] done chatcmpl-ffe25e46acfe89f714e08da3179e15eb prompt=47 cached=0 thinking=False effort=none tokens=400 sha=9e00b8c5aff2 finish=length rounds=188 accepted=211/344 ttft=0.698 decode=23.895 elapsed=24.593 queued=0.043 tok/s=16.7
+[tensorfold] next turn: background prefill of 448 tokens stepped aside: other work came first (queued 0.09s)
+[tensorfold] done chatcmpl-c74a2c5bddd465fcc80cf4202095ea34 prompt=47 cached=0 thinking=False effort=none tokens=400 sha=e678cd80637b finish=length rounds=189 accepted=210/342 ttft=0.925 decode=23.760 elapsed=24.685 queued=0.042 tok/s=16.8
+[tensorfold] next turn: background prefill of 448 tokens stepped aside: other work came first (queued 0.07s)
+[tensorfold] done chatcmpl-88216da3705380fbf75cc309c1e50f97 prompt=45 cached=0 thinking=False effort=none tokens=400 sha=054bdba29026 finish=length rounds=194 accepted=205/337 ttft=0.249 decode=24.782 elapsed=25.031 queued=0.042 tok/s=16.1
+[tensorfold] next turn: background prefill of 446 tokens stepped aside: other work came first (queued 0.05s)
+info: kv pool idle: promised 0, free 4098 + store 0 == total 4098
+[tensorfold] done chatcmpl-3f2e02b065a90091288eafbcae036e8b prompt=47 cached=0 thinking=False effort=none tokens=400 sha=87a18130955f finish=length rounds=197 accepted=202/322 ttft=0.469 decode=24.723 elapsed=25.192 queued=0.043 tok/s=16.1
+[tensorfold] next turn: background prefill of 448 tokens stepped aside: other work came first (queued 0.00s)
+info: prompt cache: 5999 tokens, resumed at 0, kept 1; 3 states, 788 MiB and 2904 MiB spare of 3693 MiB (hits 7, misses 39, evicted 0, refused 0, failed 0)
+info: kv pool idle: promised 0, free 4098 + store 0 == total 4098
+[tensorfold] done chatcmpl-e4cd1d343e7c87892dee423da729788f prompt=5999 cached=0 thinking=True effort=max tokens=36 sha=6c267681109a finish=stop rounds=9 accepted=27/36 ttft=3.861 decode=0.618 elapsed=4.479 queued=0.000 tok/s=56.6
+[tensorfold] next turn: background prefill of 6036 tokens stepped aside: other work came first (queued 0.00s)
+info: prompt cache: 9279 tokens, resumed at 4096, kept 1; 4 states, 1096 MiB and 2596 MiB spare of 3693 MiB (hits 8, misses 39, evicted 0, refused 0, failed 0)
+info: kv pool idle: promised 0, free 4098 + store 0 == total 4098
+[tensorfold] done chatcmpl-7d7299176b61db62206440c19be4cfb1 prompt=9279 cached=4096 thinking=True effort=max tokens=174 sha=ac2f403f596d finish=stop rounds=54 accepted=120/168 ttft=3.223 decode=3.414 elapsed=6.637 queued=0.001 tok/s=50.7
+info: prompt cache: 9317 tokens, resumed at 4096, kept 1; 5 states, 1404 MiB and 2288 MiB spare of 3693 MiB (hits 9, misses 39, evicted 0, refused 0, failed 0)
+info: kv pool idle: promised 0, free 4098 + store 0 == total 4098
+[tensorfold] next turn: background prefill of 9317 tokens done (queued 0.00s)
+info: prompt cache: 9330 tokens, resumed at 8192, kept 0; 5 states, 1404 MiB and 2288 MiB spare of 3693 MiB (hits 10, misses 39, evicted 0, refused 0, failed 0)
+info: kv pool idle: promised 0, free 4098 + store 0 == total 4098
+[tensorfold] done chatcmpl-d3e97225bb20539761e332d4504df686 prompt=9330 cached=8192 thinking=True effort=max tokens=10 sha=2cbd7a70112d finish=stop rounds=4 accepted=6/10 ttft=1.275 decode=0.231 elapsed=1.506 queued=0.378 tok/s=39.0
+[tensorfold] next turn: background prefill of 9333 tokens stepped aside: other work came first (queued 0.00s)
+info: prompt cache: 9466 tokens, resumed at 8192, kept 0; 5 states, 1404 MiB and 2288 MiB spare of 3693 MiB (hits 11, misses 39, evicted 0, refused 0, failed 0)
+info: kv pool idle: promised 0, free 4098 + store 0 == total 4098
+[tensorfold] done chatcmpl-c284f92de296961c8874a46a1bc3760c prompt=9466 cached=8192 thinking=True effort=max tokens=16 sha=fdbd18da2bcc finish=stop rounds=6 accepted=10/16 ttft=0.981 decode=0.348 elapsed=1.329 queued=0.000 tok/s=43.1
+[tensorfold] next turn: background prefill of 9482 tokens stepped aside: other work came first (queued 0.00s)
+info: prompt cache: 9330 tokens, resumed at 8192, kept 0; 5 states, 1404 MiB and 2288 MiB spare of 3693 MiB (hits 12, misses 39, evicted 0, refused 0, failed 0)
+info: kv pool idle: promised 0, free 4098 + store 0 == total 4098
+[tensorfold] done chatcmpl-a43581f4c24dc4ff010932a85d39fc74 prompt=9330 cached=8192 thinking=True effort=max tokens=10 sha=2cbd7a70112d finish=stop rounds=4 accepted=6/10 ttft=0.901 decode=0.230 elapsed=1.131 queued=0.000 tok/s=39.2
+[tensorfold] next turn: background prefill of 9333 tokens stepped aside (queued 0.00s)

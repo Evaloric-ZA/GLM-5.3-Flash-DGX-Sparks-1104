@@ -1,0 +1,80 @@
+[off1] restart at 2026-11-04T09:09:33 with: TF_GLM_PROF=1 TF_GLM_PDL_CHAIN=reduce,hc,p2p,moe
+[off1] healthy after ~5 s; image: tensorfold-glm53-spark:45a1d17d74d7; env: TF_GLM_PROF=1 TF_GLM_PDL_CHAIN=reduce,hc,p2p,moe 
+[off1] 1-stream prose: tok/s 37.3/37.6 | tok/round 2.07 | ms/round 55.2 | accepted 57% | sha 64c908210a9e
+[off1] 1-stream code: tok/s 55.8/55.7 | tok/round 3.77 | ms/round 67.6 | accepted 75% | sha 315341215112
+[off1] 4-stream prose, rep 0: total 78.4 tok/s | per stream 19.4 19.6 20.0 19.4 | tok/round 2.07 | ms/round 105 | accepted 63%
+[off1] 4-stream prose, rep 1: total 78.5 tok/s | per stream 20.0 20.2 19.5 18.8 | tok/round 2.09 | ms/round 106 | accepted 63%
+[off1] 4stream rep0 total 81.5
+[off1] 4stream rep1 total 78.2
+[off1] prof prompt chunk to 64 rows: 5 reports, wall 191.19 ms, gpu 190.62 ms, kda nan ms
+[off1] prof shared 10 rows: 2 reports, wall 92.34 ms, gpu 92.28 ms, kda 16.975 ms
+[off1] prof shared 11 rows: 1 reports, wall 96.76 ms, gpu 96.70 ms, kda 17.120 ms
+[off1] prof shared 12 rows: 1 reports, wall 100.91 ms, gpu 100.86 ms, kda 17.280 ms
+[off1] prof shared 13 rows: 1 reports, wall 105.16 ms, gpu 105.10 ms, kda 17.370 ms
+[off1] prof shared 8 rows: 1 reports, wall 80.89 ms, gpu 80.83 ms, kda 16.700 ms
+[off1] prof shared 9 rows: 1 reports, wall 88.92 ms, gpu 88.86 ms, kda 16.810 ms
+[off1] prof verify 2 rows: 6 reports, wall 44.41 ms, gpu 44.35 ms, kda 13.180 ms
+[off1] prof verify 3 rows: 2 reports, wall 50.84 ms, gpu 50.80 ms, kda 13.385 ms
+[off1] prof verify 4 rows: 2 reports, wall 56.82 ms, gpu 56.76 ms, kda 13.535 ms
+[off1] prof verify 8 rows: 1 reports, wall 83.00 ms, gpu 82.95 ms, kda 14.360 ms
+[off1] done 09:14:34Z
+[on1] restart at 2026-11-04T09:14:34 with: TF_GLM_PROF=1
+[on1] healthy after ~5 s; image: tensorfold-glm53-spark:45a1d17d74d7; env: TF_GLM_PROF=1 
+[on1] 1-stream prose: tok/s 37.9/37.8 | tok/round 2.07 | ms/round 54.5 | accepted 57% | sha 64c908210a9e
+[on1] 1-stream code: tok/s 56.0/55.9 | tok/round 3.77 | ms/round 67.3 | accepted 75% | sha 315341215112
+[on1] 4-stream prose, rep 0: total 79.8 tok/s | per stream 20.5 19.9 20.0 19.3 | tok/round 2.15 | ms/round 107 | accepted 64%
+[on1] 4-stream prose, rep 1: total 80.9 tok/s | per stream 21.4 19.8 20.2 19.5 | tok/round 2.15 | ms/round 106 | accepted 64%
+[on1] 4stream rep0 total 79.6
+[on1] 4stream rep1 total 78.3
+[on1] prof prompt chunk to 64 rows: 5 reports, wall 191.40 ms, gpu 190.83 ms, kda nan ms
+[on1] prof shared 10 rows: 1 reports, wall 93.40 ms, gpu 93.33 ms, kda 17.110 ms
+[on1] prof shared 11 rows: 1 reports, wall 98.95 ms, gpu 98.88 ms, kda 17.320 ms
+[on1] prof shared 12 rows: 1 reports, wall 101.52 ms, gpu 101.46 ms, kda 17.370 ms
+[on1] prof shared 8 rows: 1 reports, wall 81.12 ms, gpu 81.06 ms, kda 16.670 ms
+[on1] prof shared 9 rows: 1 reports, wall 87.42 ms, gpu 87.36 ms, kda 16.830 ms
+[on1] prof verify 2 rows: 6 reports, wall 43.83 ms, gpu 43.77 ms, kda 13.052 ms
+[on1] prof verify 3 rows: 2 reports, wall 50.34 ms, gpu 50.29 ms, kda 13.220 ms
+[on1] prof verify 4 rows: 2 reports, wall 56.38 ms, gpu 56.31 ms, kda 13.435 ms
+[on1] prof verify 8 rows: 1 reports, wall 82.91 ms, gpu 82.85 ms, kda 14.320 ms
+[on1] done 09:19:33Z
+[off2] restart at 2026-11-04T09:19:33 with: TF_GLM_PROF=1 TF_GLM_PDL_CHAIN=reduce,hc,p2p,moe
+[off2] healthy after ~5 s; image: tensorfold-glm53-spark:45a1d17d74d7; env: TF_GLM_PROF=1 TF_GLM_PDL_CHAIN=reduce,hc,p2p,moe 
+[off2] 1-stream prose: tok/s 37.9/37.7 | tok/round 2.07 | ms/round 54.6 | accepted 57% | sha 64c908210a9e
+[off2] 1-stream code: tok/s 55.9/55.7 | tok/round 3.77 | ms/round 67.5 | accepted 75% | sha 315341215112
+[off2] 4-stream prose, rep 0: total 81.2 tok/s | per stream 21.8 20.4 19.2 19.8 | tok/round 2.17 | ms/round 106 | accepted 64%
+[off2] 4-stream prose, rep 1: total 79.2 tok/s | per stream 20.8 20.0 19.3 19.2 | tok/round 2.09 | ms/round 105 | accepted 63%
+[off2] 4stream rep0 total 77.8
+[off2] 4stream rep1 total 77.4
+[off2] prof prompt chunk to 64 rows: 5 reports, wall 190.05 ms, gpu 189.48 ms, kda nan ms
+[off2] prof shared 10 rows: 2 reports, wall 92.88 ms, gpu 92.83 ms, kda 16.810 ms
+[off2] prof shared 11 rows: 1 reports, wall 96.63 ms, gpu 96.57 ms, kda 17.010 ms
+[off2] prof shared 12 rows: 1 reports, wall 100.31 ms, gpu 100.25 ms, kda 17.140 ms
+[off2] prof shared 13 rows: 1 reports, wall 106.46 ms, gpu 106.40 ms, kda 17.460 ms
+[off2] prof shared 8 rows: 1 reports, wall 80.38 ms, gpu 80.31 ms, kda 16.340 ms
+[off2] prof shared 9 rows: 1 reports, wall 88.61 ms, gpu 88.55 ms, kda 16.640 ms
+[off2] prof verify 2 rows: 6 reports, wall 43.95 ms, gpu 43.89 ms, kda 12.993 ms
+[off2] prof verify 3 rows: 2 reports, wall 50.56 ms, gpu 50.50 ms, kda 13.195 ms
+[off2] prof verify 4 rows: 1 reports, wall 57.07 ms, gpu 57.01 ms, kda 13.550 ms
+[off2] prof verify 8 rows: 1 reports, wall 83.17 ms, gpu 83.10 ms, kda 14.320 ms
+[off2] done 09:24:33Z
+[on2] restart at 2026-11-04T09:24:33 with: TF_GLM_PROF=1
+[on2] healthy after ~5 s; image: tensorfold-glm53-spark:45a1d17d74d7; env: TF_GLM_PROF=1 
+[on2] 1-stream prose: tok/s 37.9/37.8 | tok/round 2.07 | ms/round 54.6 | accepted 57% | sha 64c908210a9e
+[on2] 1-stream code: tok/s 55.8/56.0 | tok/round 3.77 | ms/round 67.4 | accepted 75% | sha 315341215112
+[on2] 4-stream prose, rep 0: total 79.7 tok/s | per stream 20.5 19.6 20.0 19.5 | tok/round 2.13 | ms/round 107 | accepted 62%
+[on2] 4-stream prose, rep 1: total 78.5 tok/s | per stream 20.3 19.6 19.2 19.4 | tok/round 2.12 | ms/round 108 | accepted 61%
+[on2] 4stream rep0 total 80.3
+[on2] 4stream rep1 total 76.7
+[on2] prof prompt chunk to 64 rows: 5 reports, wall 187.72 ms, gpu 187.16 ms, kda nan ms
+[on2] prof shared 10 rows: 2 reports, wall 92.37 ms, gpu 92.31 ms, kda 17.125 ms
+[on2] prof shared 11 rows: 1 reports, wall 97.41 ms, gpu 97.35 ms, kda 17.370 ms
+[on2] prof shared 12 rows: 1 reports, wall 101.24 ms, gpu 101.18 ms, kda 17.460 ms
+[on2] prof shared 13 rows: 1 reports, wall 106.47 ms, gpu 106.40 ms, kda 17.650 ms
+[on2] prof shared 8 rows: 1 reports, wall 78.43 ms, gpu 78.37 ms, kda 16.650 ms
+[on2] prof shared 9 rows: 1 reports, wall 87.69 ms, gpu 87.63 ms, kda 16.920 ms
+[on2] prof verify 2 rows: 6 reports, wall 43.87 ms, gpu 43.82 ms, kda 13.052 ms
+[on2] prof verify 3 rows: 2 reports, wall 50.63 ms, gpu 50.58 ms, kda 13.215 ms
+[on2] prof verify 4 rows: 2 reports, wall 56.63 ms, gpu 56.56 ms, kda 13.515 ms
+[on2] prof verify 8 rows: 1 reports, wall 83.19 ms, gpu 83.14 ms, kda 14.320 ms
+[on2] done 09:29:33Z
+LEGS_DONE

@@ -1,0 +1,7 @@
+=== decay t+1h  2026-11-03T11:10:43Z  uptime_h=1.00  load=0.50 0.37 0.41  freeMB=8116
+  -> 4 stream(s): median 70.5 tok/s (mean 70.55 +- se 0.08, n=10), spread 1.07%  |  round p50 108.44 p95 113.19 max 113.34 ms, spread 7.51%  |  tokens identical  rounds identical
+  -> 1 stream(s): median 38.6 tok/s (mean 38.56 +- se 0.04, n=3), spread 0.39%  |  round p50 51.49 p95 51.50 max 51.50 ms, spread 0.06%  |  tokens identical  rounds identical
+  -> 2 stream(s): median 54.2 tok/s (mean 54.27 +- se 0.06, n=3), spread 0.33%  |  round p50 73.59 p95 74.44 max 74.44 ms, spread 2.27%  |  tokens identical  rounds identical
+  -> 4 stream(s): median 71.0 tok/s (mean 70.93 +- se 0.04, n=3), spread 0.20%  |  round p50 108.18 p95 110.53 max 110.53 ms, spread 4.69%  |  tokens identical  rounds identical
+  incidence: slow-trials 0/10 (round>130ms) | tps med 70.6 spread 1.1% | round p95 113.19226829464286 max 113.33634362931035
+decay point t+1h done

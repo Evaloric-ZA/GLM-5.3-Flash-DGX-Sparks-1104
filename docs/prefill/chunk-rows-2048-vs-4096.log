@@ -1,0 +1,26 @@
+######## rows2048-nodraft
+  model 80.72 GiB
+# GLM-5.3-Flash at http://127.0.0.1:8888/v1/chat/completions  (fresh random content each trial: no prefix-cache hit)
+  ~23K trial 1: 23580 tok, TTFT 14.50s -> 1626 tok/s (cached_tokens=0)
+  ~23K trial 2: 23553 tok, TTFT 14.49s -> 1626 tok/s (cached_tokens=0)
+  ~23K trial 3: 23544 tok, TTFT 14.47s -> 1627 tok/s (cached_tokens=0)
+  ~95K trial 1: 95123 tok, TTFT 57.63s -> 1651 tok/s (cached_tokens=0)
+  ~95K trial 2: 94967 tok, TTFT 57.62s -> 1648 tok/s (cached_tokens=0)
+  ~95K trial 3: 95012 tok, TTFT 57.83s -> 1643 tok/s (cached_tokens=0)
+  NLL 0.7523
+  answers sha 11ceddde19d4
+######## rows4096-nodraft
+  model 82.30 GiB
+# GLM-5.3-Flash at http://127.0.0.1:8888/v1/chat/completions  (fresh random content each trial: no prefix-cache hit)
+  ~23K trial 1: 23580 tok, TTFT 13.54s -> 1742 tok/s (cached_tokens=0)
+  ~23K trial 2: 23553 tok, TTFT 13.52s -> 1742 tok/s (cached_tokens=0)
+  ~23K trial 3: 23544 tok, TTFT 13.50s -> 1744 tok/s (cached_tokens=0)
+  ~95K trial 1: 95123 tok, TTFT 54.17s -> 1756 tok/s (cached_tokens=0)
+  ~95K trial 2: 94967 tok, TTFT 54.00s -> 1759 tok/s (cached_tokens=0)
+  ~95K trial 3: 95012 tok, TTFT 54.11s -> 1756 tok/s (cached_tokens=0)
+  NLL 0.7523
+  answers sha 11ceddde19d4
+---- restoring production config (93 patches, DFlash2 drafts) ----
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 81.80 GiB; 4 streams at once, the engine's own and 3 mor
+GLM-5.3-Flash-EXL3 is now LIVE! on port 8888
+CHUNKTEST_DONE

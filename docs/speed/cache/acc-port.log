@@ -1,0 +1,4 @@
+[port] 1-stream prose: tok/s 38.4/38.4 | tok/round 2.07 | ms/round 53.8 | accepted 57% | sha 64c908210a9e
+[port] 1-stream code: tok/s 56.6/56.6 | tok/round 3.77 | ms/round 66.6 | accepted 75% | sha 315341215112
+[port] 4-stream prose, rep 0: total 81.3 tok/s | per stream 21.2 21.2 19.9 19.0 | tok/round 2.16 | ms/round 106 | accepted 64%
+[port] 4-stream prose, rep 1: total 78.9 tok/s | per stream 20.5 19.5 19.4 19.5 | tok/round 1.99 | ms/round 101 | accepted 60%

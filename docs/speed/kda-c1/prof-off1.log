@@ -1,0 +1,23 @@
+info: glm prof verify 2 rows (64 calls): wall 44.06 ms, gpu 44.00 ms a call; embed 0.02 kda 13.16 mla 4.93 gather_a 1.11 dense 1.19 router 3.29 routed 17.44 shared 0.37 gather_b 1.04 head 1.47
+info: glm prof verify 2 rows (64 calls): wall 44.90 ms, gpu 44.85 ms a call; embed 0.02 kda 13.36 mla 5.05 gather_a 1.16 dense 1.21 router 3.37 routed 17.76 shared 0.40 gather_b 1.04 head 1.48
+info: glm prof prompt chunk to 64 rows (4 calls): wall 146.58 ms, gpu 146.05 ms a call; gate 1.39 embed 0.03 router 46.90 routed 94.93 head 1.84 draw 0.95 mtp 0.01 commit 0.01
+info: glm prof verify 3 rows (64 calls): wall 51.02 ms, gpu 50.97 ms a call; embed 0.02 kda 13.44 mla 5.08 gather_a 1.13 dense 1.20 router 3.36 routed 23.84 shared 0.42 gather_b 1.00 head 1.48
+info: glm prof verify 2 rows (64 calls): wall 44.98 ms, gpu 44.93 ms a call; embed 0.02 kda 13.32 mla 5.04 gather_a 1.21 dense 1.20 router 3.35 routed 17.81 shared 0.39 gather_b 1.11 head 1.49
+info: glm prof verify 4 rows (64 calls): wall 57.01 ms, gpu 56.96 ms a call; embed 0.02 kda 13.62 mla 5.15 gather_a 1.33 dense 1.21 router 3.42 routed 29.17 shared 0.45 gather_b 1.09 head 1.50
+info: glm prof verify 2 rows (64 calls): wall 43.51 ms, gpu 43.47 ms a call; embed 0.02 kda 13.06 mla 4.90 gather_a 1.08 dense 1.19 router 3.25 routed 17.20 shared 0.36 gather_b 0.94 head 1.46
+info: glm prof verify 2 rows (64 calls): wall 44.38 ms, gpu 44.33 ms a call; embed 0.02 kda 13.09 mla 4.93 gather_a 1.28 dense 1.18 router 3.28 routed 17.61 shared 0.37 gather_b 1.11 head 1.47
+info: glm prof verify 3 rows (64 calls): wall 50.67 ms, gpu 50.63 ms a call; embed 0.02 kda 13.33 mla 5.02 gather_a 1.19 dense 1.19 router 3.31 routed 23.60 shared 0.41 gather_b 1.09 head 1.47
+info: glm prof verify 2 rows (64 calls): wall 44.60 ms, gpu 44.55 ms a call; embed 0.02 kda 13.09 mla 4.93 gather_a 1.30 dense 1.18 router 3.28 routed 17.81 shared 0.38 gather_b 1.10 head 1.46
+info: glm prof verify 8 rows (64 calls): wall 83.00 ms, gpu 82.95 ms a call; embed 0.02 kda 14.36 mla 5.46 gather_a 1.67 dense 1.21 router 3.55 routed 52.97 shared 0.63 gather_b 1.59 head 1.49
+info: glm prof prompt chunk to 64 rows (4 calls): wall 197.97 ms, gpu 197.42 ms a call; gate 2.21 embed 0.03 router 51.84 routed 140.02 head 1.94 draw 1.36 mtp 0.01 commit 0.01
+info: glm prof prompt chunk to 64 rows (4 calls): wall 210.72 ms, gpu 210.35 ms a call; gate 2.64 embed 0.04 router 54.98 routed 149.27 head 1.94 draw 1.48 mtp 0.01 commit 0.01
+info: glm prof shared 11 rows (64 calls): wall 96.76 ms, gpu 96.70 ms a call; embed 0.02 kda 17.12 mla 5.74 gather_a 1.77 dense 1.22 router 3.54 routed 62.99 shared 0.81 gather_b 1.98 head 1.50
+info: glm prof shared 9 rows (64 calls): wall 88.92 ms, gpu 88.86 ms a call; embed 0.02 kda 16.81 mla 5.60 gather_a 1.71 dense 1.22 router 3.53 routed 55.96 shared 0.72 gather_b 1.80 head 1.49
+info: glm prof verify 4 rows (64 calls): wall 56.63 ms, gpu 56.56 ms a call; embed 0.02 kda 13.45 mla 5.08 gather_a 1.44 dense 1.20 router 3.37 routed 28.93 shared 0.44 gather_b 1.15 head 1.48
+info: glm prof prompt chunk to 64 rows (4 calls): wall 190.19 ms, gpu 189.49 ms a call; gate 4.01 embed 0.03 router 50.75 routed 131.50 head 1.92 draw 1.25 mtp 0.01 commit 0.01
+info: glm prof shared 10 rows (64 calls): wall 91.95 ms, gpu 91.90 ms a call; embed 0.02 kda 17.00 mla 5.66 gather_a 1.76 dense 1.22 router 3.51 routed 58.25 shared 0.77 gather_b 2.21 head 1.51
+info: glm prof shared 8 rows (64 calls): wall 80.89 ms, gpu 80.83 ms a call; embed 0.02 kda 16.70 mla 5.54 gather_a 1.61 dense 1.22 router 3.45 routed 48.53 shared 0.64 gather_b 1.61 head 1.50
+info: glm prof prompt chunk to 64 rows (4 calls): wall 210.50 ms, gpu 209.79 ms a call; gate 5.44 embed 0.03 router 54.02 routed 147.17 head 1.81 draw 1.30 mtp 0.01 commit 0.01
+info: glm prof shared 12 rows (64 calls): wall 100.91 ms, gpu 100.86 ms a call; embed 0.02 kda 17.28 mla 5.87 gather_a 1.67 dense 1.23 router 3.62 routed 66.84 shared 0.80 gather_b 2.03 head 1.50
+info: glm prof shared 13 rows (64 calls): wall 105.16 ms, gpu 105.10 ms a call; embed 0.02 kda 17.37 mla 5.92 gather_a 1.82 dense 1.23 router 3.68 routed 70.44 shared 0.86 gather_b 2.27 head 1.50
+info: glm prof shared 10 rows (64 calls): wall 92.72 ms, gpu 92.66 ms a call; embed 0.02 kda 16.95 mla 5.67 gather_a 1.75 dense 1.22 router 3.49 routed 59.04 shared 0.76 gather_b 2.25 head 1.50

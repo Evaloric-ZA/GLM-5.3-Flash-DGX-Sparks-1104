@@ -1,0 +1,23 @@
+######## gap-q4-4096
+  model 81.81 GiB
+# GLM-5.3-Flash at http://127.0.0.1:8888/v1/chat/completions  (fresh random content each trial: no prefix-cache hit)
+  ~23K trial 1: 23580 tok, TTFT 12.66s -> 1863 tok/s (cached_tokens=0)
+  ~23K trial 2: 23553 tok, TTFT 12.64s -> 1864 tok/s (cached_tokens=0)
+  ~23K trial 3: 23544 tok, TTFT 12.64s -> 1863 tok/s (cached_tokens=0)
+  ~95K trial 1: 95123 tok, TTFT 50.41s -> 1887 tok/s (cached_tokens=0)
+  ~95K trial 2: 94967 tok, TTFT 50.41s -> 1884 tok/s (cached_tokens=0)
+  ~95K trial 3: 95012 tok, TTFT 50.40s -> 1885 tok/s (cached_tokens=0)
+  NLL 0.8005
+  answers sha 28d50949f647
+---- swapping to v1.0.7 for a 3-trial re-measure ----
+Window   1048576 tokens · 8 at once · fp8 KV · dflash2 drafts · q4 dense weights · RoCE all-gathers · sp
+# GLM-5.3-Flash-EXL3 at http://127.0.0.1:8888/v1/chat/completions  (fresh random content each trial: no prefix-cache hit)
+  ~23K trial 1: 23573 tok, TTFT 12.56s -> 1877 tok/s (cached_tokens=0)
+  ~23K trial 2: 23546 tok, TTFT 12.54s -> 1877 tok/s (cached_tokens=0)
+  ~23K trial 3: 23537 tok, TTFT 12.52s -> 1881 tok/s (cached_tokens=0)
+  ~95K trial 1: 95116 tok, TTFT 51.47s -> 1848 tok/s (cached_tokens=0)
+  ~95K trial 2: 94960 tok, TTFT 51.41s -> 1847 tok/s (cached_tokens=0)
+  ~95K trial 3: 95005 tok, TTFT 51.45s -> 1847 tok/s (cached_tokens=0)
+---- back to the new recipe ----
+GLM-5.3-Flash-EXL3 is now LIVE! on port 8888
+GAP_DONE

@@ -1,0 +1,53 @@
+# Changelog
+
+- **2026-11-04** -- Upstream TensorFold since this recipe's pin (`f350cd3e`, 1,059 commits behind main) was reviewed for
+  fixes worth carrying (docs/speed/RESULTS.md, "Upstream since the pin"). The one that applied cleanly, the lane fix
+  `ed39acc5a` (a stream finishing on its first token released its lane only after its trace), was built as `0106` and
+  **killed on the pair**: with it, decode fell to 28 / 36 tok/s at one stream and 51-66 at four, with a connection and a
+  waiter left open after twenty one-token replies; the same sequence on the 105-patch image is normal (38 / 57 / 78-80).
+  Upstream's deferred release does not fit this stack's lane host (0093, 0104). The candidate stays in
+  docs/speed/candidates as a record; the served image is the 105-patch `8c4ca7bd8c39`.
+- **2026-11-04** -- `0105`: a tool parameter whose schema names no type (`{}`, a description alone, a `$ref` that resolves
+  nowhere) takes the JSON object or array the model wrote instead of coming back as a JSON string of it; scalars, plain
+  words and quoted strings stay text, and a tool declared without a parameter schema keeps streaming its arguments as
+  before. The rule is the maintainer's from the 2x DGX Sparks recipe's issue #180 (upstream keeps untyped values as text);
+  a union that admits an object already decoded one on this engine pin. Found by a sweep of the sibling repos' issues
+  (docs/speed/RESULTS.md, "Sweep of the sibling repos"), reproduced here, host-tested (43 parser + 7 parameter tests).
+- **2026-11-04** -- `0104`, warm turns for GLM (ported from the 2x RTX PRO 6000 recipe): after a reply the server prefills the
+  next turn's rendering in the background (a prompt-only pass that steps aside for real work), so a user message after an
+  agent loop resumes past the loop instead of re-reading it. Measured here (docs/speed/RESULTS.md): the next user message
+  after a 9.3K-token tool loop cached 8,192 tokens (was 4,096), 1.6 s to answer (was 3.5 s); 17 of 18 passes stepped aside
+  under back-to-back requests; first-token latency 0.15 s unchanged; decode 38.4 / 56.6 at 1 stream, 79-81 at 4 streams,
+  greedy hashes unchanged. Each pass logs `next turn: background prefill of N tokens done` or `stepped aside`.
+- **2026-11-04** -- `0103` (ported from the RTX recipe's `0096`, with a guard): a tool call that follows prose quoting
+  tool-call markup ("Qwen's `<tool_call>{}`") is parsed as the call instead of coming back as content. The guard: an opener
+  inside a value still open in the text before it (an unbalanced `{`, an open `<arg_value>` or `<parameter=`) is never
+  retried - without it a call quoting a whole call inside a JSON string argument invoked the quoted call (found by Codex,
+  confirmed by a host test). `zig build test-tool-parse-host`: 42 pass.
+- **2026-11-04** -- `MEMORY_RESERVE_GIB` 8 -> 9.5 (scripts/local.sh): the prompt cache had silently gone to ZERO. The page
+  planner takes whole 1M-token windows of pages before the cache, and the room (19.8 GiB at reserve 8, up from 18.2 the
+  day before) crossed the threshold for a third window; rank 0 logged "no prompt cache" and every chat turn re-prefilled
+  its history (6 s a turn at 9.3K tokens). At 9.5 the pool is two windows (4,098 pages, 2.1M tokens) and the cache 3.6 GiB;
+  decode, prefill, mixed and 8-stream numbers unchanged, 1.5 GiB more free memory. Check rank 0's startup line after
+  every start: "4098 pages", "prompt cache: N GiB", no "cannot keep one state" warning.
+- **2026-11-04** -- Decode campaign items closed by measurement (docs/speed/RESULTS.md): KDA C1 (merging the KDA chain's
+  launches) - fusion loses, dependent launches save ~0.2 ms a round, below the engine's resolution; the exact PDL
+  variant is parked as candidate `0199` (opt-in `TF_GLM_PDL_CHAIN=...,kda`). Sampled decoding at temperature 0.7: this
+  pair 36.7-38.9 tok/s at 1 stream and 75-76 at 4, the spark1+2 reference 21 and 30-31 (its round doubles under
+  sampling); its 4-stream lead over this pair is greedy-only.
+- **2026-11-03** -- `0099`: `TF_GLM_PROF=1` also brackets shared windows (several streams in one forward), reported as
+  `glm prof shared N rows` by total rows; off unless set, no kernel or token change. With it, a 4-stream round is
+  attributed (docs/speed/RESULTS.md, "Decode attribution campaign"): routed experts 4.2-5.8 ms a row at the GB10's
+  memory bandwidth, KDA mixers 16-17 ms flat, drafter 7-8 ms. Two exact candidates measured neutral and parked in
+  docs/speed/candidates: `0098` (`TF_GLM_DFLASH2_EDGE`) and `0100` (`TF_GLM_MM_STAGES`). The chain cut, the tpm rule,
+  a bf16 drafter, bf16 dense and stock TensorFold v1.2.1 were all slower or equal; the numbers are in that section.
+- **2026-11-03** -- `PREFILL_SHARE` (default `0.68`, passed to both ranks as `TENSORFOLD_PREFILL_SHARE`): a stream
+  decoding beside another request's long prefill no longer gets one decode round per prompt chunk. A chunk is atomic
+  (4,096 rows with 0094/0095, about 2.5 s here), and at the engine's default share of 1 a chat beside a long prefill
+  produced a token or two per chunk. At `0.68` each chunk first owes the decoders about 1.2 s of decode rounds (~22),
+  and the long prompt's first token comes about 47% later. Replies are byte-identical at any value: the share only
+  moves when the next chunk runs. The rows in the README are the knob's arithmetic on this pair's measured chunk and
+  round times; the mixed-traffic measurement is from the 2x RTX PRO 6000 recipe (2.3 -> 27.2 chat events/s during a
+  cold 175K prefill, that prompt's first token 33.4 -> 49.8 s). `PREFILL_BUDGET` is passed as
+  `TENSORFOLD_PREFILL_BUDGET` when set; it cannot split a chunk. Takes effect at the next `./start.sh restart`
+  ([README](README.md#prefill-beside-decoding)).

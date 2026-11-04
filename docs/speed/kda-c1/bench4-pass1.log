@@ -1,0 +1,23 @@
+NVIDIA GB10 sm_121, 48 SMs, L2 24 MiB; H=32 layers=34 reps=30
+
+== lone window (chainRows): us per layer-chain, mean over 30 x 34 layers; bits against ref3 on every layer
+rows= 1 wp=2:  | ref3 32.36 us [ref]  | ref3+PDL(all 3) 25.38 us [same bits]  | ref3+PDL(step,out) 27.80 us [same bits]  | prep_p plain+PDL(step,out) 27.56 us [same bits]  | fused2 41.33 us [same bits]  | fused2+PDL 35.65 us [same bits]  | chain1 36.86 us [same bits]
+rows= 2 wp=4:  | ref3 33.37 us [ref]  | ref3+PDL(all 3) 26.15 us [same bits]  | ref3+PDL(step,out) 28.34 us [same bits]  | prep_p plain+PDL(step,out) 28.38 us [same bits]  | fused2 38.74 us [same bits]  | fused2+PDL 33.84 us [same bits]  | chain1 36.40 us [same bits]
+rows= 3 wp=4:  | ref3 34.75 us [ref]  | ref3+PDL(all 3) 27.26 us [same bits]  | ref3+PDL(step,out) 29.51 us [same bits]  | prep_p plain+PDL(step,out) 29.69 us [same bits]  | fused2 54.14 us [same bits]  | fused2+PDL 42.94 us [same bits]  | chain1 40.72 us [same bits]
+rows= 4 wp=4:  | ref3 35.91 us [ref]  | ref3+PDL(all 3) 28.40 us [same bits]  | ref3+PDL(step,out) 30.47 us [same bits]  | prep_p plain+PDL(step,out) 30.61 us [same bits]  | fused2 51.97 us [same bits]  | fused2+PDL 47.92 us [same bits]  | chain1 45.21 us [same bits]
+rows= 6 wp=4:  | ref3 39.93 us [ref]  | ref3+PDL(all 3) 32.86 us [same bits]  | ref3+PDL(step,out) 34.59 us [same bits]  | prep_p plain+PDL(step,out) 34.79 us [same bits]  | fused2 65.98 us [same bits]  | fused2+PDL 61.23 us [same bits]  | chain1 53.69 us [same bits]
+rows= 8 wp=4:  | ref3 43.30 us [ref]  | ref3+PDL(all 3) 36.87 us [same bits]  | ref3+PDL(step,out) 38.74 us [same bits]  | prep_p plain+PDL(step,out) 38.08 us [same bits]  | fused2 79.02 us [same bits]  | fused2+PDL 74.07 us [same bits]  | chain1 63.04 us [same bits]
+rows=11 wp=8:  | ref3 46.95 us [ref]  | ref3+PDL(all 3) 37.68 us [same bits]  | ref3+PDL(step,out) 40.05 us [same bits]  | prep_p plain+PDL(step,out) 39.60 us [same bits]  | fused2 57.59 us [same bits]  | fused2+PDL 59.70 us [same bits]  | chain1 75.08 us [same bits]
+rows=14 wp=8:  | ref3 49.98 us [ref]  | ref3+PDL(all 3) 41.51 us [same bits]  | ref3+PDL(step,out) 44.34 us [same bits]  | prep_p plain+PDL(step,out) 43.36 us [same bits]  | fused2 67.07 us [same bits]  | fused2+PDL 60.63 us [same bits]  | chain1 89.13 us [same bits]
+rows=16 wp=8:  | ref3 52.98 us [ref]  | ref3+PDL(all 3) 44.04 us [same bits]  | ref3+PDL(step,out) 45.86 us [same bits]  | prep_p plain+PDL(step,out) 45.94 us [same bits]  | fused2 71.03 us [same bits]  | fused2+PDL 66.27 us [same bits]  | chain1 98.40 us [same bits]
+rows=24 wp=8:  | ref3 64.90 us [ref]  | ref3+PDL(all 3) 58.89 us [same bits]  | ref3+PDL(step,out) 60.39 us [same bits]  | prep_p plain+PDL(step,out) 59.16 us [same bits]  | fused2 92.08 us [same bits]  | fused2+PDL 88.04 us [same bits]  | chain1 135.12 us [same bits]
+
+== shared window (chainSegs), 4 streams: us per layer-chain; bits against ref3 (segs) on every layer
+segs=4 rows= 8:  | ref3 94.60 us [ref]  | ref3+PDL(all 3) 84.27 us [same bits]  | ref3+PDL(step,out) 86.86 us [same bits]  | prep_p plain+PDL(step,out) 86.33 us [same bits]  | fused2 95.51 us [same bits]  | fused2+PDL 88.97 us [same bits]
+segs=4 rows=10:  | ref3 96.82 us [ref]  | ref3+PDL(all 3) 87.86 us [same bits]  | ref3+PDL(step,out) 88.57 us [same bits]  | prep_p plain+PDL(step,out) 89.20 us [same bits]  | fused2 100.45 us [same bits]  | fused2+PDL 97.35 us [same bits]
+segs=4 rows=12:  | ref3 97.99 us [ref]  | ref3+PDL(all 3) 88.51 us [same bits]  | ref3+PDL(step,out) 91.28 us [same bits]  | prep_p plain+PDL(step,out) 89.88 us [same bits]  | fused2 103.38 us [same bits]  | fused2+PDL 96.56 us [same bits]
+segs=4 rows=14:  | ref3 98.63 us [ref]  | ref3+PDL(all 3) 91.89 us [same bits]  | ref3+PDL(step,out) 92.33 us [same bits]  | prep_p plain+PDL(step,out) 91.92 us [same bits]  | fused2 115.33 us [same bits]  | fused2+PDL 99.52 us [same bits]
+segs=4 rows=16:  | ref3 100.66 us [ref]  | ref3+PDL(all 3) 90.79 us [same bits]  | ref3+PDL(step,out) 92.01 us [same bits]  | prep_p plain+PDL(step,out) 94.25 us [same bits]  | fused2 110.08 us [same bits]  | fused2+PDL 104.06 us [same bits]
+segs=2 rows= 4:  | ref3 53.22 us [ref]  | ref3+PDL(all 3) 44.44 us [same bits]  | ref3+PDL(step,out) 47.34 us [same bits]  | prep_p plain+PDL(step,out) 46.74 us [same bits]  | fused2 54.63 us [same bits]  | fused2+PDL 49.23 us [same bits]
+
+prep_p plain + PDL(step,out) segs (1 segment, 3 rows) against the lone ref3 chain: same bits

@@ -1,0 +1,171 @@
+### trace leg widths  2026-11-02T23:06:26Z
+  set TF_GLM_DFLASH2_TRACE=1
+  set TF_GLM_DFLASH2_FORCE=1,2,3,4,5,6,7,8
+--- restart ---
+GLM-5.3-Flash EXL3 | TensorFold native engine (Zig) | by Mia's AI Lab
+TensorFold f350cd3e + 95 engine patches | 2x DGX Spark (GB10, sm_121), tensor parallel 2 | API :8888
+
+model: EXL3 4-bit experts, mcg codebook, vision
+4 at once | context 1048576 (auto: the window that served these settings last time (/home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/.state/context-fit.tsv))
+q8 dense, bf16 head, fp8 (one shared page pool; context = one request's cap) KV | dflash2 drafts | vision 1 | reserve 8 GiB | port 8888
+rank 0 here, rank 1 on 10.0.34.4 | RoCE on
+
+[1/6] Check both Sparks: Linux aarch64, Docker, the NVIDIA runtime, memory, disk and ports
+[I_PLATFORM] Linux aarch64, Docker access and GPU passthrough are ready.
+[I_WORKER] spark4 reachable over ssh, aarch64, Docker with the NVIDIA runtime.
+Stopping rank 0 here (up to 45 s; requests in progress get TF_DRAIN_S to finish).
+Stopping rank 1 on 10.0.34.4.
+Stopped both ranks. Logs saved to /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/logs/glm53-spark-20261102T230630Z-1513054.tar.gz (newest 10 kept).
+[I_GPU] rank 0: GPU 0: NVIDIA GB10.
+[I_GPU] rank 1: GPU 0: NVIDIA GB10 on 10.0.34.4.
+[I_RAM] rank 0: 113.4 GiB available of 121.6 GiB (0.0 GiB of it parked on the per-CPU page lists).
+[I_RAM] rank 1: 116.4 GiB available on 10.0.34.4.
+[I_DISK] Enough disk space on this Spark for what is still missing.
+[I_DISK] 10.0.34.4 needs no new space (image and weights are in place).
+[I_PORT] Port 8888 and 29583-29584 are free.
+
+[2/6] Build the TensorFold native image with 95 engine patches for sm_121, and send it to 10.0.34.4
+Image is ready: tensorfold-glm53-spark:503f271d5532 (tf.patches=503f271d5532)
+[I_IMAGE] 10.0.34.4 already runs this image (tensorfold-glm53-spark:503f271d5532, c97744b4a4d8).
+
+[3/6] Download or check the checkpoint and the drafter weights on both Sparks
+Checkpoint: model: EXL3 4-bit experts, mcg codebook, vision (local, mounted read-only; no download).
+DFlash2 drafter weights: CC BY-NC-ND 4.0, non-commercial. DRAFTER=mtp or DRAFTER=none serves without them.
+DFlash2 is ready: /home/zurih/.cache/aevonix-glm53/dflash2
+
+[4/6] Find the link between the Sparks and the RDMA devices it runs on
+[I_FABRIC] Link: 10.0.34.3 (enp1s0f1np1) <-> 10.0.34.4 (enp1s0f1np1); RDMA rocep1s0f1,roceP2p1s0f1 <-> rocep1s0f1,roceP2p1s0f1, RoCE v2 GID 3/3.
+[I_ROCE] Both Sparks expose /dev/infiniband; the ranks will try the RoCE all-gather path (TF_ROCE_MAX_KB=4096) and fall back to NCCL together if either cannot bring it up.
+[I_WEIGHTS] 10.0.34.4 holds the checkpoint and the drafter.
+
+[5/6] Start rank 1 on 10.0.34.4, then rank 0 here
+Ranks:
+  rank 1 on 10.0.34.4 (follows rank 0's steps, binds no port):
+    env TF_GLM_RANK=1 TF_GLM_WORLD=2 TF_CUDA_DEVICE=0 NCCL_COMM_ID=10.0.34.3:29583 /usr/local/bin/tensorfold-native serve /model --name GLM-5.3-Flash --host 0.0.0.0 --port 8888 --context 1048576 --parallel 4 --max-tokens 32768 --kv-cache fp8 --no-update-check --no-thinking --reasoning-effort high --vision --vision-max-images 50 --chat-template /templates/chat_template.jinja --drafter /dflash2 --drafter-bits 4 
+  rank 0 here (spark3), HTTP server and vision tower:
+    env TF_GLM_RANK=0 TF_GLM_WORLD=2 TF_CUDA_DEVICE=0 NCCL_COMM_ID=10.0.34.3:29583 /usr/local/bin/tensorfold-native serve /model --name GLM-5.3-Flash --host 0.0.0.0 --port 8888 --context 1048576 --parallel 4 --max-tokens 32768 --kv-cache fp8 --no-update-check --no-thinking --reasoning-effort high --vision --vision-max-images 50 --chat-template /templates/chat_template.jinja --drafter /dflash2 --drafter-bits 4 
+Started rank 1 on 10.0.34.4.
+Started rank 0 here (logs: /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/logs/run-20261102T230633Z-1512629-1).
+
+[6/6] Wait for the API and run a greedy smoke test
+info: p2p: rank 0 of 2: GPU 0 NVIDIA GB10 (0000000F:01:00.0); driver 580.159.03, CUDA driver API 13.3, NCCL 2.30.7
+info: p2p: peer access: TensorFold enables none itself (no cuCtxEnablePeerAccess); NCCL sets up its own peers
+info: p2p: NCCL transport (this rank's connections): rank 1 NET/IB (12 connections)
+info: checkpoint digest: 0.0 GiB read in 0.1 s, 83/83 cached files
+Waiting for the API: 30 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+Waiting for the API: 60 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+info: weights: 8 readers read 156.4 GiB ahead of the loader
+Waiting for the API: 90 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+info: glm: 281 linears packed (8/16 bits), 3.42 GiB freed
+warning: opt-in prompt numerics: absorb/expand tensor cores (TF_GLM_ABSORB_MMA), packed 8-bit linears on bf16 rows
+info: dflash2: drafter from /dflash2 (CC BY-NC-ND 4.0: non-commercial use only), linears at 4 bits, 0.57 GiB on the device
+info: RoCE all-gather: 2 HCA(s), shards up to 4096 KiB by RDMA writes
+Waiting for the API: 120 s (first start: each rank hashes the checkpoint once; then the load and graphs).
+info: prompt cache: 5.2 GiB of device pages and 0.0 GiB of pinned host memory a rank (0.0 GiB over the 2 ranks)
+[tensorfold] warning: non-loopback server has no API key; requests are open
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.58 GiB; 4 streams at once, the engine's own and 3 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 18.8 GiB left after a 8.0 GiB reserve; prompts in passes of up to 4096 rows, a 5.2 GiB prompt cache; own glue kernels
+[tensorfold] serving GLM-5.3-Flash at http://0.0.0.0:8888/v1 (sampling: temperature 1.0, top_p 0.95; drafts: DFlash2 (/dflash2) + copies; context: 1048576; loaded in 121.1s)
+[tensorfold] 192.168.1.130 "GET /health HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /slots HTTP/1.1" 404 -
+[tensorfold] 192.168.1.130 "GET /v1/models HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /api/v0/models HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /api/tags HTTP/1.1" 404 -
+[tensorfold] 192.168.1.130 "GET /v1/models HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /health HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /metrics HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /v1/models HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /health HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /metrics HTTP/1.1" 200 -
+[tensorfold] 127.0.0.1 "GET /health HTTP/1.1" 200 -
+[I_MEMGUARD] Watching both Sparks: a stop below 2.5 GiB held 4 s (pid 1546310; MEMGUARD=0 turns it off).
+Smoke test passed: ready
+
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.58 GiB; 4 streams at once, the engine's own and 3 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 18.8 GiB left after a 8.0 GiB reserve; prompts in passes of up to 4096 rows, a 5.2 GiB prompt cache; own glue kernels
+[tensorfold] serving GLM-5.3-Flash at http://0.0.0.0:8888/v1 (sampling: temperature 1.0, top_p 0.95; drafts: DFlash2 (/dflash2) + copies; context: 1048576; loaded in 121.1s)
+info: p2p: rank 0 of 2: GPU 0 NVIDIA GB10 (0000000F:01:00.0); driver 580.159.03, CUDA driver API 13.3, NCCL 2.30.7
+Health: http://127.0.0.1:8888/health
+Logs: /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/logs/current/rank*.log
+GLM-5.3-Flash-EXL3 is now LIVE! on port 8888
+Endpoint: http://127.0.0.1:8888/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/.state/context-fit.tsv to probe again).
+KV pool: 4098 pages = 2098176 tokens shared by 4 streams (one request up to 1048576).
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.58 GiB; 4 streams at once, the engine's own and 3 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 18.8 GiB left after a 8.0 GiB reserve; prompts in passes of up to 4096 rows, a 5.2 GiB prompt cache; own glue kernels
+--- workload (fixed prompts, greedy; widths are cycled by FORCE when set) ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 2 trials, max_tokens 300
+  1 stream(s) trial 1:   30.7 tok/s total,  30.7/stream  tok  300 rounds  149  round  63.3 ms  tok/round 2.013  accept 0.294  drafted/round 3.43
+  1 stream(s) trial 2:   30.8 tok/s total,  30.8/stream  tok  300 rounds  149  round  63.1 ms  tok/round 2.013  accept 0.294  drafted/round 3.43
+  -> 1 stream(s): median 30.7 tok/s, spread 0.22%  |  round 63.22 ms, spread 0.27%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-widths-trace.json
+# NOISE FLOOR 1 stream(s): tok/s spread 0.22% -> a win must exceed 0.45%; round_ms spread 0.27% -> 0.54%
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 1 trials, max_tokens 300
+  2 stream(s) trial 1:   42.7 tok/s total,  21.3/stream  tok  600 rounds  288  round  92.1 ms  tok/round 2.086  accept 0.315  drafted/round 3.43
+  -> 2 stream(s): median 42.7 tok/s, spread 0.00%  |  round 92.07 ms, spread 0.30%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-widths-trace2.json
+# NOISE FLOOR 2 stream(s): tok/s spread 0.00% -> a win must exceed 0.00%; round_ms spread 0.30% -> 0.60%
+--- harvest ---
+  587 dft records in docs/speed/dft-widths.log
+# 587 dft trace records from docs/speed/dft-widths.log
+
+## lone windows: 309 observations
+ rows      n  median v ms   mean v ms      p10      p90
+    1     40        37.97       38.44    37.24    41.63
+    2     42        44.77       44.83    43.20    46.79
+    3     39        50.89       51.02    48.52    54.37
+    4     40        56.03       56.66    54.27    60.34
+    5     37        61.27       61.76    59.28    65.37
+    6     37        66.23       66.95    63.49    70.84
+    7     37        73.05       73.21    69.42    76.74
+    8     37        78.55       79.05    73.48    84.60
+  fit on medians   : a = 38.73 ms, b = 5.68 ms/row  (b/a = 0.147, r2 = 0.9983, rmse 0.54, n=8)
+  fit on all points: a = 39.03 ms, b = 5.70 ms/row  (b/a = 0.146, r2 = 0.9578, rmse 2.75, n=309)
+  residual check (median v minus fitted):
+    rows 1:   -0.76 ms
+    rows 2:   +0.36 ms
+    rows 3:   +0.81 ms
+    rows 4:   +0.27 ms
+    rows 5:   -0.16 ms
+    rows 6:   -0.88 ms
+    rows 7:   +0.27 ms
+    rows 8:   +0.09 ms
+  drafter pass: median 5.92 ms, mean 5.70 ms, n=309
+
+(regrouped 278 shared records into 139 forwards; lanes per forward: {2: 139})
+
+## shared forwards: 139 observations  (rows = TOTAL rows in the forward)
+ rows      n  median v ms   mean v ms      p10      p90
+    2     18        48.67       48.17    47.33    49.08
+    4     18        62.03       62.31    58.54    65.49
+    5      1        69.46       69.46    69.46    69.46
+    6     17        74.52       75.49    71.56    82.48
+    8     17        83.82       84.30    81.93    88.17
+   10     17        94.23       94.08    90.91    97.50
+   12     17       104.07      103.81    96.03   114.05
+   14     18       111.76      112.14   107.66   116.82
+   16     16       121.26      121.78   114.08   131.77
+  fit on medians   : a = 47.38 ms, b = 5.05 ms/row  (b/a = 0.107, r2 = 0.9934, rmse 1.86, n=9)
+  fit on all points: a = 46.78 ms, b = 5.12 ms/row  (b/a = 0.109, r2 = 0.9706, rmse 4.09, n=139)
+  residual check (median v minus fitted):
+    rows 2:   -3.76 ms
+    rows 4:   -0.50 ms
+    rows 5:   +1.88 ms
+    rows 6:   +1.89 ms
+    rows 8:   +1.09 ms
+    rows 10:   +1.40 ms
+    rows 12:   +1.15 ms
+    rows 14:   -1.27 ms
+    rows 16:   -1.87 ms
+  drafter pass: median 6.83 ms, mean 6.51 ms, n=139
+
+## landing by chain position (windows with >= k drafts offered)
+ pos  offered  landed  cond. rate
+   1      511     358       0.701
+   2      296     155       0.524
+   3      123      66       0.537
+   4       53      23       0.434
+   5       18       5       0.278
+   6        4       3       0.750
+
+# sm_120 seed for comparison: a = 9.40 ms, b = 1.31 ms/row (b/a = 0.139), draft 1.37 ms
+# gb10 lane tables:  window 52.0 + 6.8/row (b/a = 0.131); shared 76.0 + 4.1/row (b/a = 0.054)
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/trace-widths.json
+### trace leg widths done  2026-11-02T23:09:13Z

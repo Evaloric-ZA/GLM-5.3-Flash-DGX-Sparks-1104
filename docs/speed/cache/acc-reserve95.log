@@ -1,0 +1,4 @@
+[reserve95] 1-stream prose: tok/s 38.3/38.4 | tok/round 2.07 | ms/round 53.8 | accepted 57% | sha 64c908210a9e
+[reserve95] 1-stream code: tok/s 56.5/56.4 | tok/round 3.77 | ms/round 66.7 | accepted 75% | sha 315341215112
+[reserve95] 4-stream prose, rep 0: total 80.8 tok/s | per stream 20.6 20.8 19.9 19.6 | tok/round 2.07 | ms/round 102 | accepted 62%
+[reserve95] 4-stream prose, rep 1: total 79.8 tok/s | per stream 20.6 19.7 19.5 19.9 | tok/round 2.12 | ms/round 106 | accepted 64%

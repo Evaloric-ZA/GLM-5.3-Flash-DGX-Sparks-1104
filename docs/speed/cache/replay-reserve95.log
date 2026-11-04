@@ -1,0 +1,5 @@
+R1 [sys,u1]: prompt=5999 cached=0 out=36 tool_calls=1 reasoning_len=74 4.51s
+R2 [sys,u1,a1,tool]  (the loop's next step): prompt=9279 cached=4096 out=174 tool_calls=0 reasoning_len=427 6.74s
+R3 [..., a2, u2]  (next user message, default): prompt=9330 cached=4096 out=10 tool_calls=0 reasoning_len=25 3.51s
+R4 same, clear_thinking=false: prompt=9466 cached=8192 out=16 tool_calls=0 reasoning_len=47 1.34s
+R5 same, client sends no reasoning_content: prompt=9330 cached=8192 out=10 tool_calls=0 reasoning_len=25 1.15s

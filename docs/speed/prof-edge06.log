@@ -1,0 +1,99 @@
+### prof leg edge06  2026-11-03T18:03:04Z
+  set TF_GLM_PROF=1
+  set TF_GLM_DFLASH2_EDGE=0.6
+[safestart] 18:03:04Z verifying both ranks are stopped (worker=zurih@10.0.34.4)
+[safestart] 18:03:04Z ./stop.sh (drain, archive, kill on timeout, verified absent)
+[safestart] Stopped both ranks. Logs saved to /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/logs/glm53-spark-20261103T180308Z-3180344.tar.gz (newest 10 kept).
+[safestart] both ranks absent after 1x5s - safe to start
+[safestart] 18:03:09Z ./start.sh restart
+[safestart] HEALTHY after ~140s at 18:05:24Z
+Endpoint: http://127.0.0.1:8888/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/.state/context-fit.tsv to probe again).
+KV pool: 6147 pages = 3147264 tokens shared by 4 streams (one request up to 1048576).
+--- decode, 1 stream then 4 ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 2 trials, max_tokens 300
+  1 stream(s) trial 1:   37.8 tok/s total,  37.8/stream  tok  300 rounds  144  round  52.9 ms  tok/round 2.083  accept 0.587  drafted/round 1.83
+  1 stream(s) trial 2:   37.9 tok/s total,  37.9/stream  tok  300 rounds  144  round  52.9 ms  tok/round 2.083  accept 0.587  drafted/round 1.83
+  -> 1 stream(s): median 37.8 tok/s (mean 37.83 +- se 0.05, n=2), spread 0.24%  |  round p50 52.87 p95 52.88 max 52.88 ms, spread 0.03%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-edge06-prof1.json
+# NOISE FLOOR 1 stream(s): tok/s spread 0.24% -> a win must exceed 0.48%; round_ms spread 0.03% -> 0.05%
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 1 trials, max_tokens 300
+  4 stream(s) trial 1:   70.1 tok/s total,  17.5/stream  tok 1200 rounds  577  round 109.8 ms  tok/round 2.083  accept 0.633  drafted/round 1.70
+  -> 4 stream(s): median 70.1 tok/s (mean 70.06 +- se 0.00, n=1), spread 0.00%  |  round p50 109.72 p95 112.23 max 112.23 ms, spread 4.26%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-edge06-prof4.json
+# NOISE FLOOR 4 stream(s): tok/s spread 0.00% -> a win must exceed 0.00%; round_ms spread 4.26% -> 8.51%
+--- cold prefill (fresh content) ---
+# GLM-5.3-Flash at http://127.0.0.1:8888/v1/chat/completions  (fresh random content each trial: no prefix-cache hit)
+  ~23K trial 1: 23580 tok, TTFT 13.85s -> 1703 tok/s (cached_tokens=0)
+  ~23K trial 2: 23553 tok, TTFT 13.82s -> 1705 tok/s (cached_tokens=0)
+  ~23K trial 3: 23544 tok, TTFT 13.79s -> 1708 tok/s (cached_tokens=0)
+  ~95K trial 1: 95123 tok, TTFT 55.45s -> 1716 tok/s (cached_tokens=0)
+  ~95K trial 2: 94967 tok, TTFT 55.41s -> 1714 tok/s (cached_tokens=0)
+  ~95K trial 3: 95012 tok, TTFT 55.38s -> 1716 tok/s (cached_tokens=0)
+--- harvest ---
+  25 prof reports
+
+## prompt chunk to 2048 rows  (21 reports, 84 calls)
+   wall  1970.35 ms a call
+   gpu   2350.44 ms a call   (119.3% of wall)
+   NOT GPU -380.09 ms      (-19.3% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   router      1707.70     72.7%      86.7%
+   routed       635.62     27.0%      32.3%
+   head          10.35      0.4%       0.5%
+   gate           0.71      0.0%       0.0%
+   embed          0.71      0.0%       0.0%
+   draw           0.01      0.0%       0.0%
+   mtp            0.00      0.0%       0.0%
+   commit         0.00      0.0%       0.0%
+   (sum)       2355.10    100.2%     119.5%
+
+## prompt chunk to 64 rows  (1 reports, 4 calls)
+   wall   142.09 ms a call
+   gpu    141.57 ms a call   ( 99.6% of wall)
+   NOT GPU   0.52 ms      (  0.4% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   routed        92.05     65.0%      64.8%
+   router        45.74     32.3%      32.2%
+   head           1.82      1.3%       1.3%
+   draw           1.06      0.7%       0.7%
+   gate           0.86      0.6%       0.6%
+   embed          0.03      0.0%       0.0%
+   mtp            0.01      0.0%       0.0%
+   commit         0.01      0.0%       0.0%
+   (sum)        141.58    100.0%      99.6%
+
+## verify 2 rows  (2 reports, 128 calls)
+   wall    43.60 ms a call
+   gpu     43.50 ms a call   ( 99.8% of wall)
+   NOT GPU   0.10 ms      (  0.2% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   routed        16.87     38.8%      38.7%
+   kda           12.93     29.7%      29.6%
+   mla            4.96     11.4%      11.4%
+   router         3.29      7.6%       7.5%
+   head           1.42      3.3%       3.3%
+   gather_b       1.30      3.0%       3.0%
+   gather_a       1.19      2.7%       2.7%
+   dense          1.17      2.7%       2.7%
+   shared         0.36      0.8%       0.8%
+   embed          0.02      0.0%       0.0%
+   (sum)         43.51    100.0%      99.8%
+
+## verify 3 rows  (1 reports, 64 calls)
+   wall    49.71 ms a call
+   gpu     49.61 ms a call   ( 99.8% of wall)
+   NOT GPU   0.10 ms      (  0.2% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   routed        22.42     45.2%      45.1%
+   kda           13.12     26.4%      26.4%
+   mla            5.05     10.2%      10.2%
+   router         3.33      6.7%       6.7%
+   gather_b       1.43      2.9%       2.9%
+   head           1.42      2.9%       2.9%
+   gather_a       1.24      2.5%       2.5%
+   dense          1.18      2.4%       2.4%
+   shared         0.40      0.8%       0.8%
+   embed          0.02      0.0%       0.0%
+   (sum)         49.61    100.0%      99.8%
+### prof leg edge06 done  2026-11-03T18:09:25Z

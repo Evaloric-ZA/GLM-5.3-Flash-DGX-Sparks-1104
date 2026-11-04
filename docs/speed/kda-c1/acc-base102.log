@@ -1,0 +1,6 @@
+[base102] 1-stream prose: tok/s 38.8/38.8 | tok/round 2.07 | ms/round 53.2 | accepted 57% | sha 64c908210a9e
+[base102] 1-stream code: tok/s 56.9/56.8 | tok/round 3.77 | ms/round 66.3 | accepted 75% | sha 315341215112
+[base102] 4-stream prose, rep 0: total 78.3 tok/s | per stream 19.8 19.9 19.4 19.2 | tok/round 2.03 | ms/round 103 | accepted 59%
+[base102] 4-stream prose, rep 1: total 80.7 tok/s | per stream 20.7 19.9 20.4 19.7 | tok/round 2.14 | ms/round 106 | accepted 66%
+[base102] 4stream rep0 total 77.8
+[base102] 4stream rep1 total 81.8

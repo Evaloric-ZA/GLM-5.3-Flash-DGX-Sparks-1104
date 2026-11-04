@@ -1,0 +1,56 @@
+=== baseline captured 2026-11-02T22:58:35Z ===
+
+--- image + container (rank 0, spark3) ---
+name=glm53-spark image=tensorfold-glm53-spark:503f271d5532 status=Up 2 hours created=2026-11-02 22:35:50 +0200 IST
+tensorfold-glm53-spark:503f271d5532
+
+--- rank 0 command line ---
+serve /model --name GLM-5.3-Flash --host 0.0.0.0 --port 8888 --context 1048576 --parallel 4 --max-tokens 32768 --kv-cache fp8 --no-update-check --no-thinking --reasoning-effort high --vision --vision-max-images 50 --chat-template /templates/chat_template.jinja --drafter /dflash2 --drafter-bits 4
+
+--- rank 0 environment (TF_/TENSORFOLD_/NCCL_) ---
+CUDA_DEVICE_ORDER=PCI_BUS_ID
+CUDA_VERSION=13.3.1
+NCCL_COMM_ID=10.0.34.3:29583
+NCCL_IB_GID_INDEX=3
+NCCL_IB_HCA=rocep1s0f1,roceP2p1s0f1
+NCCL_MAX_NCHANNELS=4
+NCCL_MIN_NCHANNELS=4
+NCCL_SOCKET_IFNAME=enp1s0f1np1
+NCCL_VERSION=2.30.7-1
+TENSORFOLD_MEMORY_RESERVE_GIB=8
+TENSORFOLD_NO_LIVE=1
+TENSORFOLD_NO_UPDATE_CHECK=1
+TF_BIN=/usr/local/bin/tensorfold-native
+TF_CUDA_DEVICE=0
+TF_GLM_ABSORB_MMA=1
+TF_GLM_CE_EXCHANGE=0
+TF_GLM_CLEAR_THINKING=1
+TF_GLM_DENSE_BITS=8
+TF_GLM_HEAD_BITS=16
+TF_GLM_HOST_CACHE_GIB=0
+TF_GLM_RANK=0
+TF_GLM_W8A8=0
+TF_GLM_WORLD=2
+TF_KV_PAGES=on
+TF_ROCE=1
+TF_ROCE_HCA=rocep1s0f1,roceP2p1s0f1
+TF_ROCE_MAX_KB=4096
+
+--- /health + /v1/models ---
+{"status": "ok", "model": "GLM-5.3-Flash", "model_ids": ["GLM-5.3-Flash"], "max_batch_size": 4, "warming": false, "memory": {"active": 108726891576, "cache": 0, "peak": 109230208056}, "live": {"connections": 0, "waiting": 0, "decode_tokens_per_second": 0.0, "prefill_tokens_per_second": 0.0}, "version": "1.1.9", "backend": "cuda", "device": "NVIDIA GB10"}
+{"object": "list", "data": [{"id": "GLM-5.3-Flash", "object": "model", "created": 1793660315, "owned_by": "tensorfold", "context_length": 1048576, "max_model_len": 1048576, "reasoning": {"default_enabled": false, "default_effort": "high", "supported_efforts": ["max", "high", "low"]}}]}
+--- startup line (rank0.log) ---
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.58 GiB; 4 streams at once, the engine's own and 3 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 18.1 GiB left after a 8.0 GiB reserve; prompts in passes of up to 4096 rows, a 4.4 GiB prompt cache; own glue kernels
+
+--- prompt cache / roce lines ---
+info: RoCE all-gather: 2 HCA(s), shards up to 4096 KiB by RDMA writes
+info: prompt cache: 4.4 GiB of device pages and 0.0 GiB of pinned host memory a rank (0.0 GiB over the 2 ranks)
+
+--- memory now (both Sparks) ---
+spark3 MemAvailable: 9.0 GiB
+spark4 MemAvailable: 13.1 GiB
+
+--- git state ---
+002c523 Reserve 8: the prompt cache nearly doubles, the KV pool is at its plateau
+?? docs/dec.py
+?? docs/speed/

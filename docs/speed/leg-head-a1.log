@@ -1,0 +1,51 @@
+### leg head-a1  2026-11-03T07:54:27Z
+  (no overrides: baseline configuration)
+--- restart ---
+[safestart] 07:54:27Z verifying both ranks are stopped (worker=zurih@10.0.34.4)
+[safestart] both ranks absent after 1x5s - safe to start
+[safestart] 07:54:30Z ./start.sh restart
+[safestart] HEALTHY after ~135s at 07:56:40Z
+Endpoint: http://127.0.0.1:8888/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/.state/context-fit.tsv to probe again).
+KV pool: 4098 pages = 2098176 tokens shared by 4 streams (one request up to 1048576).
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.58 GiB; 4 streams at once, the engine's own and 3 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 19.2 GiB left after a 8.0 GiB reserve; prompts in passes of up to 4096 rows, a 5.5 GiB prompt cache; own glue kernels
+--- decode sweep ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 3 trials, max_tokens 250
+  1 stream(s) trial 1:   37.1 tok/s total,  37.1/stream  tok  250 rounds  120  round  53.4 ms  tok/round 2.083  accept 0.591  drafted/round 1.83
+  1 stream(s) trial 2:   37.6 tok/s total,  37.6/stream  tok  250 rounds  119  round  53.3 ms  tok/round 2.101  accept 0.601  drafted/round 1.83
+  1 stream(s) trial 3:   37.4 tok/s total,  37.4/stream  tok  250 rounds  119  round  53.6 ms  tok/round 2.101  accept 0.601  drafted/round 1.83
+  -> 1 stream(s): median 37.4 tok/s (mean 37.36 +- se 0.15, n=3), spread 1.33%  |  round p50 53.41 p95 53.60 max 53.60 ms, spread 0.53%  |  tokens identical  rounds [119, 120]
+  2 stream(s) trial 1:   53.0 tok/s total,  26.5/stream  tok  500 rounds  236  round  75.8 ms  tok/round 2.119  accept 0.625  drafted/round 1.78
+  2 stream(s) trial 2:   52.8 tok/s total,  26.4/stream  tok  500 rounds  236  round  75.4 ms  tok/round 2.119  accept 0.623  drafted/round 1.79
+  2 stream(s) trial 3:   52.9 tok/s total,  26.5/stream  tok  500 rounds  236  round  76.0 ms  tok/round 2.119  accept 0.625  drafted/round 1.78
+  -> 2 stream(s): median 52.9 tok/s (mean 52.90 +- se 0.05, n=3), spread 0.32%  |  round p50 75.97 p95 76.98 max 76.98 ms, spread 4.22%  |  tokens identical  rounds identical
+  4 stream(s) trial 1:   68.9 tok/s total,  17.2/stream  tok 1000 rounds  478  round 111.1 ms  tok/round 2.097  accept 0.631  drafted/round 1.73
+  4 stream(s) trial 2:   69.0 tok/s total,  17.2/stream  tok 1000 rounds  478  round 111.2 ms  tok/round 2.097  accept 0.631  drafted/round 1.73
+  4 stream(s) trial 3:   68.9 tok/s total,  17.2/stream  tok 1000 rounds  478  round 111.1 ms  tok/round 2.097  accept 0.629  drafted/round 1.73
+  -> 4 stream(s): median 68.9 tok/s (mean 68.91 +- se 0.04, n=3), spread 0.17%  |  round p50 111.96 p95 112.25 max 112.25 ms, spread 3.64%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-head-a1.json
+# NOISE FLOOR 1 stream(s): tok/s spread 1.33% -> a win must exceed 2.66%; round_ms spread 0.53% -> 1.06%
+# NOISE FLOOR 2 stream(s): tok/s spread 0.32% -> a win must exceed 0.65%; round_ms spread 4.22% -> 8.43%
+# NOISE FLOOR 4 stream(s): tok/s spread 0.17% -> a win must exceed 0.35%; round_ms spread 3.64% -> 7.29%
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8888
+  prose         25 tok -> sha 87fa94aff290   90 out  'The sky appears blue because sunlight is compo'
+  code          30 tok -> sha 2e49486f633d  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      19 tok -> sha 39fcf5dc3ba3   41 out  '**Necessary** spelled backwards is: **yrassece'
+  math          26 tok -> sha 690b2a33a2d6  120 out  '# 847 × 23\n\n## Method: Breaking apart 23\n\n**St'
+  zig           31 tok -> sha 60b55b74b419   48 out  '```zig\nfn sum(slice: []const u32) u32 {\n    va'
+  json          32 tok -> sha 29a950f3434c   21 out  '{"name": "Elena Marsh", "age": 34, "city": "Po'
+  boundary   10674 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45604 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/contract-head-a1.json
+--- token_sha contract vs baseline ---
+  OK   prose     baseline 87fa94aff290 leg 87fa94aff290
+  OK   code      baseline 2e49486f633d leg 2e49486f633d
+  OK   spelling  baseline 39fcf5dc3ba3 leg 39fcf5dc3ba3
+  OK   math      baseline 690b2a33a2d6 leg 690b2a33a2d6
+  OK   zig       baseline 60b55b74b419 leg 60b55b74b419
+  OK   json      baseline 29a950f3434c leg 29a950f3434c
+  OK   boundary  baseline fbe213fd977e leg fbe213fd977e
+  OK   longctx   baseline fbe213fd977e leg fbe213fd977e
+  CONTRACT: IDENTICAL on all 8 prompts
+### leg head-a1 done  2026-11-03T07:58:53Z

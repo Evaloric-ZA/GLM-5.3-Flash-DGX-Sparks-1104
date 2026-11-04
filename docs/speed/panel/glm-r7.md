@@ -1,0 +1,8 @@
+**One material hole, and it's fixable tonight. The 8-stream load point is absent** — the load sweep covers 1/2/4 only, and the claim "q8 helps" at higher concurrency is extrapolated. Cheap fix: a 3-trial A/B/A at 8 streams, arm-spread check first (if A arms differ >0.5%, the 1/2/4 story doesn't generalize — but A1/A2 agree within 0.25% per evidence B). Under 30 min including restart-verification per your leg-sweep protocol.
+
+**Second, smaller: the -2.8% round-time vs -2.4% byte prediction** is presented as "second confirmation" — it's a single
+number, no spread given for the round-ms legs, only the tok/s trial spreads. If the ms figures have comparable spreads, fine, but say so; if not measurable cheaply, the +3.7/+2.2/+2.0 effects and their A-arm agreement (0.04/0.22/0 brief. Struck-out sentence about cold-start: keep it, it's fine as user-visible note.
+
+**Third: evidence A vs B divergence at 2/4 streams** (+0.9/+1.2 vs +2.2/+2.2) — the brief says "same direction, larger tonight," and the A arms in B are clean, so the most likely explanation is the 06:54 run's ambient drift. But that's an inference, not evidence. Add one line to the package: the leg-sweep A-arm reproducibility is the reason to trust B over A for effect sizes; A's role is quality + first-pass sign. **Do not present both effect sizes to the two passes as equally weighted; pick B's.** When you do, check the $8$-stream...
+
+**Verdict: after the 8-stream leg plus explicit B-weighting of effect sizes, ready** — no re-run of paired NLL needed (config and image unchanged; greedy identity + contract hashes across both windows already bind quality to tonight's arms via identical shas).

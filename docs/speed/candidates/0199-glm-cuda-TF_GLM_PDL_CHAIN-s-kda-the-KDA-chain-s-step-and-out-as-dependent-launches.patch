@@ -1,0 +1,346 @@
+From 1f951858ecfcab2e62397e474f04d534045d794d Mon Sep 17 00:00:00 2001
+From: MiaAI_Lab <mia.ailab1@gmail.com>
+Date: Wed, 4 Nov 2026 10:56:04 +0200
+Subject: [PATCH] glm-cuda: TF_GLM_PDL_CHAIN's kda (opt-in by name) - the KDA
+ chain's step and out as dependent launches (the same bits)
+
+KDA C1 as measured, not as planned. The handoff's "merge the verify chain's three launches" was benchmarked on an idle
+GB10 (docs/speed/kda-c1/bench_kda_c1.cu, 34 layers each with its own 2 MiB states, 60 reps x 2 passes, every output
+byte-compared): prep fused into step loses (every step block recomputes the head's prep: 33 -> 39 us a layer at 2
+rows, 44 -> 79 at 8), the single fused kernel is no better than three launches at any row count, and the chain's
+floor is its state bytes (15 us a layer lone, 61 us at 4 segments) against 33-100 us measured. The one scheduling form
+that wins standalone is the three kernels unchanged as programmatic dependent launches: -5 to -7 us a layer with prep
+launched plainly (-7 to -10 with prep dependent too), bit-identical in every cell.
+
+In the engine (image 45a1d17d74d7, pair A, TF_GLM_PROF=1, OFF/ON/OFF/ON, 2026-11-04): hashes unchanged in every leg,
+throughput within noise, and the kda section moved -0.13 ms then +0.06 ms at verify 2 rows and nowhere at the shared
+8-13 row windows - below the section's own 0.19 ms run-to-run spread. The pre-registered SHIP-OFF rule fired: `kda`
+is NOT in Chain.all; it takes effect only when named (TF_GLM_PDL_CHAIN=reduce,hc,p2p,moe,kda).
+
+- glm_kda.cu: tf_glm_kda_prep_p (waits, then triggers, at entry), tf_glm_kda_step_p/step4_p/step2_p (the state
+  slice loads before the wait - this layer's state, written long before prep - prep's rows after it, then the
+  trigger), tf_glm_kda_out_p (the gate row and the norm weight load before the wait, the read-out after; no
+  trigger, so the o_proj after it starts when out has finished), and the _segs_p forms with every CTA waiting
+  before it exits. step_kernel_body gains a PDL template parameter (false for the existing kernels: the same code).
+- cuda_kda.zig: Kernels.pdl from TF_GLM_PDL_CHAIN's new member kda; with it chain and chainSegs launch the _p
+  kernels, step and out with the attribute. prep launches plainly even then: the glm_mm matmul before it triggers
+  early (qmm_frag.cuh) and 512-thread prep CTAs waiting on its tail would hold its slots; prep_p's own trigger still
+  lets step launch early.
+- cuda_mm.zig: Chain.kda, parsed by name, not in `all`; a host test of the parse.
+
+Record: docs/speed/RESULTS.md 2026-11-04 (bench, gate, legs); Codex consult docs/speed/codex-kda-c1.md.
+
+---
+ zig/kernels/cuda/glm_kda.cu       | 115 +++++++++++++++++++++++++++++-
+ zig/src/families/glm/cuda_kda.zig |  37 +++++++---
+ zig/src/families/glm/cuda_mm.zig  |  17 ++++-
+ 3 files changed, 154 insertions(+), 15 deletions(-)
+
+diff --git a/zig/kernels/cuda/glm_kda.cu b/zig/kernels/cuda/glm_kda.cu
+index 90310dc43..c73af0f1e 100644
+--- a/zig/kernels/cuda/glm_kda.cu
++++ b/zig/kernels/cuda/glm_kda.cu
+@@ -15,6 +15,19 @@ using tf_common::warp_sum;
+ 
+ using tf_common::sigmoidf_;
+ 
++// Programmatic dependent launch (as glm_triton.cuh's): a `_p` kernel waits before it reads another grid's data or
++// writes anything, and before any exit, then lets the next grid launch; without the launch attribute both are no-ops.
++__device__ __forceinline__ void pdl_wait() {
++#if __CUDA_ARCH__ >= 900
++    asm volatile("griddepcontrol.wait;" ::: "memory");
++#endif
++}
++__device__ __forceinline__ void pdl_trigger() {
++#if __CUDA_ARCH__ >= 900
++    asm volatile("griddepcontrol.launch_dependents;" ::: "memory");
++#endif
++}
++
+ // One delta-rule step on this thread's 4 x 4 block of the state: per-channel decay, read (k), correct toward v.
+ __device__ __forceinline__ void update(float (&s)[4][4], const float (&kk)[4], const float (&gg)[4],
+                                        const float* vrow, int warp, float beta) {
+@@ -294,7 +307,8 @@ __device__ __forceinline__ void update4(float (&s)[4][4], const float (&kk)[4],
+ }
+ 
+ // Block (head, part): a warp owns 4 value rows; TR rows of saved k, q, decay, v, beta staged in smem at a time.
+-template <int WARPS, int TR>
++// PDL: prep's dependent - the state (this layer's, written long before prep) loads before the wait, prep's rows after.
++template <int WARPS, int TR, bool PDL = false>
+ __device__ __forceinline__ void step_kernel_body(
+         int H, const float* __restrict__ state_in, const float* __restrict__ q_in, const float* __restrict__ k_save,
+         const __nv_bfloat16* __restrict__ v_save, const float* __restrict__ g_save, const float* __restrict__ b_save,
+@@ -313,6 +327,10 @@ __device__ __forceinline__ void step_kernel_body(
+     for (int j = 0; j < 4; ++j)
+ #pragma unroll
+         for (int i = 0; i < 4; ++i) s[j][i] = state_in[sbase + (size_t)(warp * 4 + j) * DK + lane * 4 + i];
++    if (PDL) {
++        pdl_wait();
++        pdl_trigger();
++    }
+     for (int r0 = 0; r0 < rows; r0 += TR) {
+         const int n = rows - r0 < TR ? rows - r0 : TR;
+         __syncthreads();
+@@ -380,6 +398,32 @@ __device__ __forceinline__ void out_kernel_body(
+     out[(size_t)r * H * DV + h * DV + t] = __float2bfloat16_rn(yw * sigmoidf_(gate));
+ }
+ 
++// out_kernel_body as step's dependent: the gate (the projection's row, complete before the chain's first kernel began)
++// and the norm weight load before the wait, the read-out after it; the same operands, so the same bits. No trigger:
++// what follows the chain (an o_proj that may itself launch as a dependent) starts when out has finished.
++__device__ __forceinline__ void out_p_kernel_body(
++        int H, const __nv_bfloat16* __restrict__ y_in, const __nv_bfloat16* __restrict__ G, int g_stride,
++        const __nv_bfloat16* __restrict__ norm_w, float eps, __nv_bfloat16* __restrict__ out) {
++    const int r = blockIdx.x, h = blockIdx.y;
++    const int t = threadIdx.x, warp = t >> 5, lane = t & 31;
++    __shared__ float rinv;
++    const size_t base = ((size_t)r * H + h) * DV;
++    const float gate = __bfloat162float(G[(size_t)r * g_stride + h * DV + t]);
++    const float nw = __bfloat162float(norm_w[t]);
++    pdl_wait();
++    if (warp == 0) {
++        float ss = 0.0f;
++#pragma unroll
++        for (int i = 0; i < 4; ++i) { const float y = __bfloat162float(y_in[base + lane * 4 + i]); ss = ss + y * y; }
++        ss = warp_sum(ss);
++        if (lane == 0) rinv = 1.0f / sqrtf(ss / (float)DV + eps);
++    }
++    __syncthreads();
++    const float yn = __bfloat162float(y_in[base + t]) * rinv;
++    const float yw = nw * yn;
++    out[(size_t)r * H * DV + h * DV + t] = __float2bfloat16_rn(yw * sigmoidf_(gate));
++}
++
+ }  // namespace
+ 
+ extern "C" __global__ void __launch_bounds__(1024) tf_glm_kda_chain(
+@@ -448,6 +492,48 @@ extern "C" __global__ void __launch_bounds__(128) tf_glm_kda_out(
+     out_kernel_body(H, y_in, G, g_stride, norm_w, eps, out);
+ }
+ 
++// The chain as dependent launches (cuda_kda's Kernels.pdl, TF_GLM_PDL_CHAIN's kda): the same bodies, so the same bits.
++// prep waits at its entry (its inputs are the projection's rows), step after its state load, out after its gate load.
++// Measured on GB10 against the plain chain, 34 layers: -7 to -9 us a layer at 1-11 rows and at 4 segments of 2-4.
++extern "C" __global__ void __launch_bounds__(512) tf_glm_kda_prep_p(
++        int H, const __nv_bfloat16* __restrict__ P, int p_stride, int b_off, const __nv_bfloat16* __restrict__ A,
++        int a_stride, const __nv_bfloat16* __restrict__ cs, const float* __restrict__ cw,
++        const float* __restrict__ a_log, const float* __restrict__ dt_bias, float lower, float* __restrict__ q_out,
++        float* __restrict__ k_save, __nv_bfloat16* __restrict__ v_save, float* __restrict__ g_save,
++        float* __restrict__ b_save) {
++    pdl_wait();
++    pdl_trigger();
++    prep_kernel_body(
++        H, P, p_stride, b_off, A, a_stride, cs, cw, a_log, dt_bias, lower, q_out, k_save, v_save, g_save, b_save);
++}
++
++extern "C" __global__ void __launch_bounds__(256) tf_glm_kda_step_p(
++        int H, const float* __restrict__ state_in, const float* __restrict__ q_in, const float* __restrict__ k_save,
++        const __nv_bfloat16* __restrict__ v_save, const float* __restrict__ g_save, const float* __restrict__ b_save,
++        int rows, __nv_bfloat16* __restrict__ y_out, float* __restrict__ state_out) {
++    step_kernel_body<8, 16, true>(H, state_in, q_in, k_save, v_save, g_save, b_save, rows, y_out, state_out);
++}
++
++extern "C" __global__ void __launch_bounds__(128) tf_glm_kda_step4_p(
++        int H, const float* __restrict__ state_in, const float* __restrict__ q_in, const float* __restrict__ k_save,
++        const __nv_bfloat16* __restrict__ v_save, const float* __restrict__ g_save, const float* __restrict__ b_save,
++        int rows, __nv_bfloat16* __restrict__ y_out, float* __restrict__ state_out) {
++    step_kernel_body<4, 16, true>(H, state_in, q_in, k_save, v_save, g_save, b_save, rows, y_out, state_out);
++}
++
++extern "C" __global__ void __launch_bounds__(64) tf_glm_kda_step2_p(
++        int H, const float* __restrict__ state_in, const float* __restrict__ q_in, const float* __restrict__ k_save,
++        const __nv_bfloat16* __restrict__ v_save, const float* __restrict__ g_save, const float* __restrict__ b_save,
++        int rows, __nv_bfloat16* __restrict__ y_out, float* __restrict__ state_out) {
++    step_kernel_body<2, 16, true>(H, state_in, q_in, k_save, v_save, g_save, b_save, rows, y_out, state_out);
++}
++
++extern "C" __global__ void __launch_bounds__(128) tf_glm_kda_out_p(
++        int H, const __nv_bfloat16* __restrict__ y_in, const __nv_bfloat16* __restrict__ G, int g_stride,
++        const __nv_bfloat16* __restrict__ norm_w, float eps, __nv_bfloat16* __restrict__ out) {
++    out_p_kernel_body(H, y_in, G, g_stride, norm_w, eps, out);
++}
++
+ // A shared window's KDA layer with every segment (stream) in one launch: z picks the segment, and each block is the
+ // block that segment's own tf_glm_kda_prep / _step / _out launch runs, on its rows, states and saves (their q and y
+ // rows at the segment's own offset in the window's scratch), so the bits are the per-segment launches'.
+@@ -492,3 +578,30 @@ extern "C" __global__ void __launch_bounds__(128) tf_glm_kda_out_segs(
+     if (static_cast<int>(blockIdx.x) >= g.rows) return;
+     out_kernel_body(H, g.y, g.G, g_stride, norm_w, eps, g.out);
+ }
++
++// The segs forms as dependent launches (as the _p kernels above); every CTA waits before it exits.
++extern "C" __global__ void __launch_bounds__(512) tf_glm_kda_prep_segs_p(
++        int H, int p_stride, int b_off, int a_stride, const float* __restrict__ cw, const float* __restrict__ a_log,
++        const float* __restrict__ dt_bias, float lower, const KdaSegs t) {
++    pdl_wait();
++    pdl_trigger();
++    const KdaSeg& g = t.s[blockIdx.z];
++    if (static_cast<int>(blockIdx.x) >= g.rows) return;
++    prep_kernel_body(H, g.P, p_stride, b_off, g.A, a_stride, g.cs, cw, a_log, dt_bias, lower, g.q, g.k_save, g.v_save,
++                     g.g_save, g.b_save);
++}
++
++extern "C" __global__ void __launch_bounds__(256) tf_glm_kda_step_segs_p(int H, const KdaSegs t) {
++    const KdaSeg& g = t.s[blockIdx.z];
++    step_kernel_body<8, 16, true>(H, g.state_in, g.q, g.k_save, g.v_save, g.g_save, g.b_save, g.rows, g.y, g.state_out);
++}
++
++extern "C" __global__ void __launch_bounds__(128) tf_glm_kda_out_segs_p(
++        int H, int g_stride, const __nv_bfloat16* __restrict__ norm_w, float eps, const KdaSegs t) {
++    const KdaSeg& g = t.s[blockIdx.z];
++    if (static_cast<int>(blockIdx.x) >= g.rows) {
++        pdl_wait();
++        return;
++    }
++    out_p_kernel_body(H, g.y, g.G, g_stride, norm_w, eps, g.out);
++}
+diff --git a/zig/src/families/glm/cuda_kda.zig b/zig/src/families/glm/cuda_kda.zig
+index 0050a6ec5..a02e4b6f5 100644
+--- a/zig/src/families/glm/cuda_kda.zig
++++ b/zig/src/families/glm/cuda_kda.zig
+@@ -21,12 +21,22 @@ pub const Kernels = struct {
+     prep_segs: cuda.Function, // a shared window's segments in one launch each (chainSegs)
+     step_segs: cuda.Function,
+     out_segs: cuda.Function,
++    prep_p: cuda.Function, // the three and their segs forms as dependent launches: a wait, then the same bodies (pdl)
++    step_p: cuda.Function,
++    step4_p: cuda.Function,
++    step2_p: cuda.Function,
++    out_p: cuda.Function,
++    prep_segs_p: cuda.Function,
++    step_segs_p: cuda.Function,
++    out_segs_p: cuda.Function,
+     step_warps: u32 = 0, // TF_GLM_KDA_STEP_WARPS: 0 (unset or auto) by rows (stepWarps); 8, 4 or 2 at every row count
++    pdl: bool = false, // TF_GLM_PDL_CHAIN names kda: step and out launch as dependents (the same bits; -5 to -7 us a layer standalone on GB10, nothing resolvable in the engine - opt-in only)
+ 
+     pub fn load(m: cuda.Module) !Kernels {
+         var k: Kernels = undefined;
+-        inline for (.{ "chain", "replay", "replay_layers", "prep", "step", "step4", "step2", "out", "prep_segs", "step_segs", "out_segs" }) |name| @field(k, name) = try m.function("tf_glm_kda_" ++ name);
++        inline for (.{ "chain", "replay", "replay_layers", "prep", "step", "step4", "step2", "out", "prep_segs", "step_segs", "out_segs", "prep_p", "step_p", "step4_p", "step2_p", "out_p", "prep_segs_p", "step_segs_p", "out_segs_p" }) |name| @field(k, name) = try m.function("tf_glm_kda_" ++ name);
+         k.step_warps = stepWarpsSetting(if (std.c.getenv("TF_GLM_KDA_STEP_WARPS")) |v| std.mem.span(v) else null);
++        k.pdl = @import("cuda_mm.zig").Chain.read().kda; // a rank's own launches, no agreement needed (as p2p's)
+         return k;
+     }
+ };
+@@ -72,18 +82,20 @@ pub fn chainSegs(ks: *const Kernels, stream: cuda.Stream, c: Chain, t: *const Se
+     for ([_]u64{ c.conv_w, c.a_log, c.dt_bias }) |v| a.add(v);
+     a.add(c.lower);
+     a.add(t.*);
+-    try cuda.launch.launch(ks.prep_segs, .{ .grid = .{ .x = @intCast(most), .y = @intCast(c.heads), .z = z }, .block = .{ .x = 512 } }, stream, &a);
++    // prep launches plainly even with pdl (the matmul before it triggers early, qmm_frag.cuh, and 512-thread CTAs
++    // waiting on its tail would hold its slots); prep_segs_p's own trigger lets step launch early, its wait is a no-op
++    try cuda.launch.launch(if (ks.pdl) ks.prep_segs_p else ks.prep_segs, .{ .grid = .{ .x = @intCast(most), .y = @intCast(c.heads), .z = z }, .block = .{ .x = 512 } }, stream, &a);
+     var b: cuda.Args = .{};
+     b.add(h);
+     b.add(t.*);
+-    try cuda.launch.launch(ks.step_segs, .{ .grid = .{ .x = @intCast(c.heads), .y = dv / 4 / 8, .z = z }, .block = .{ .x = 8 * 32 } }, stream, &b);
++    try cuda.launch.launch(if (ks.pdl) ks.step_segs_p else ks.step_segs, .{ .grid = .{ .x = @intCast(c.heads), .y = dv / 4 / 8, .z = z }, .block = .{ .x = 8 * 32 }, .pdl = ks.pdl }, stream, &b);
+     var o: cuda.Args = .{};
+     o.add(h);
+     o.add(@as(c_int, @intCast(c.g_stride)));
+     o.add(c.norm_w);
+     o.add(c.eps);
+     o.add(t.*);
+-    try cuda.launch.launch(ks.out_segs, .{ .grid = .{ .x = @intCast(most), .y = @intCast(c.heads), .z = z }, .block = .{ .x = dv } }, stream, &o);
++    try cuda.launch.launch(if (ks.pdl) ks.out_segs_p else ks.out_segs, .{ .grid = .{ .x = @intCast(most), .y = @intCast(c.heads), .z = z }, .block = .{ .x = dv }, .pdl = ks.pdl }, stream, &o);
+ }
+ 
+ test "a shared window's KDA segments fit glm_kda.cu's table and one launch's arguments" {
+@@ -118,7 +130,9 @@ pub const Saves = struct { out: u64, state_out: u64, k: u64, v: u64, g: u64, b:
+ /// The three-kernel chain's scratch: q fp32 and the read-out bf16, [rows][heads][128] each.
+ pub const Wide = struct { q: u64, y: u64 };
+ 
+-/// kda.chain: `rows` rows through the fused kernel, or with `wide` through prep, step and out (WARPS 8, TR 16).
++/// kda.chain: `rows` rows through the fused kernel, or with `wide` through prep, step and out (stepWarps warps, TR 16);
++/// with `ks.pdl` step and out launch as prep's and step's dependents (the `_p` kernels: prep triggers at entry, step
++/// waits after its state load, out after its gate load - the same bodies, so the same bits).
+ pub fn chain(ks: *const Kernels, stream: cuda.Stream, c: Chain, rows: usize, s: Saves, wide: ?Wide) !void {
+     const h: c_int = @intCast(c.heads);
+     if (wide) |w| {
+@@ -133,7 +147,8 @@ pub fn chain(ks: *const Kernels, stream: cuda.Stream, c: Chain, rows: usize, s:
+         a.add(c.lower);
+         for ([_]u64{ w.q, s.k, s.v, s.g, s.b }) |v| a.add(v);
+         const grid: cuda.launch.Dim3 = .{ .x = @intCast(rows), .y = @intCast(c.heads) };
+-        try cuda.launch.launch(ks.prep, .{ .grid = grid, .block = .{ .x = 512 } }, stream, &a);
++        // prep launches plainly even with pdl (see chainSegs); prep_p's trigger lets step launch early
++        try cuda.launch.launch(if (ks.pdl) ks.prep_p else ks.prep, .{ .grid = grid, .block = .{ .x = 512 } }, stream, &a);
+         var b: cuda.Args = .{};
+         b.add(h);
+         for ([_]u64{ c.state_in, w.q, s.k, s.v, s.g, s.b }) |v| b.add(v);
+@@ -142,11 +157,11 @@ pub fn chain(ks: *const Kernels, stream: cuda.Stream, c: Chain, rows: usize, s:
+         b.add(s.state_out);
+         const wp: u32 = if (ks.step_warps != 0) ks.step_warps else stepWarps(rows);
+         const f = switch (wp) {
+-            2 => ks.step2,
+-            4 => ks.step4,
+-            else => ks.step,
++            2 => if (ks.pdl) ks.step2_p else ks.step2,
++            4 => if (ks.pdl) ks.step4_p else ks.step4,
++            else => if (ks.pdl) ks.step_p else ks.step,
+         };
+-        try cuda.launch.launch(f, .{ .grid = .{ .x = @intCast(c.heads), .y = dv / 4 / wp }, .block = .{ .x = wp * 32 } }, stream, &b);
++        try cuda.launch.launch(f, .{ .grid = .{ .x = @intCast(c.heads), .y = dv / 4 / wp }, .block = .{ .x = wp * 32 }, .pdl = ks.pdl }, stream, &b);
+         var o: cuda.Args = .{};
+         o.add(h);
+         o.add(w.y);
+@@ -155,7 +170,7 @@ pub fn chain(ks: *const Kernels, stream: cuda.Stream, c: Chain, rows: usize, s:
+         o.add(c.norm_w);
+         o.add(c.eps);
+         o.add(s.out);
+-        return cuda.launch.launch(ks.out, .{ .grid = grid, .block = .{ .x = dv } }, stream, &o);
++        return cuda.launch.launch(if (ks.pdl) ks.out_p else ks.out, .{ .grid = grid, .block = .{ .x = dv }, .pdl = ks.pdl }, stream, &o);
+     }
+     var a: cuda.Args = .{};
+     a.add(h);
+diff --git a/zig/src/families/glm/cuda_mm.zig b/zig/src/families/glm/cuda_mm.zig
+index 747d788d5..7e7d35a07 100644
+--- a/zig/src/families/glm/cuda_mm.zig
++++ b/zig/src/families/glm/cuda_mm.zig
+@@ -44,17 +44,19 @@ pub const Chain = struct {
+     hc: bool = false, // a decode window's hc_post, hc_partial8 and hc_finish (cuda_glue)
+     p2p: bool = false, // the peer-store all-gather (cuda/p2p_gather.zig): waits, lets the next grid launch, exchanges
+     moe: bool = false, // a decode window's MoE router glue: slice_sum, topk_group(_sum) launch as dependents (cuda_glue)
++    kda: bool = false, // a decode window's KDA chain: step and out launch as dependents (cuda_kda); opt-in by name only -
++    // measured 2026-11-04 (docs/speed/RESULTS.md): the same bits, no resolvable gain in the engine, so not in `all`
+ 
+     pub const all: Chain = .{ .reduce = true, .hc = true, .p2p = true, .moe = true };
+ 
+-    /// The chain a TF_GLM_PDL_CHAIN value names; null when a name is none of the three.
++    /// The chain a TF_GLM_PDL_CHAIN value names; null when a name is none of the five.
+     pub fn parse(v: []const u8) ?Chain {
+         if (std.mem.eql(u8, v, "1")) return all;
+         if (std.mem.eql(u8, v, "0")) return .{};
+         var c: Chain = .{};
+         var it = std.mem.tokenizeScalar(u8, v, ',');
+         while (it.next()) |name| {
+-            if (std.mem.eql(u8, name, "reduce")) c.reduce = true else if (std.mem.eql(u8, name, "hc")) c.hc = true else if (std.mem.eql(u8, name, "p2p")) c.p2p = true else if (std.mem.eql(u8, name, "moe")) c.moe = true else return null;
++            if (std.mem.eql(u8, name, "reduce")) c.reduce = true else if (std.mem.eql(u8, name, "hc")) c.hc = true else if (std.mem.eql(u8, name, "p2p")) c.p2p = true else if (std.mem.eql(u8, name, "moe")) c.moe = true else if (std.mem.eql(u8, name, "kda")) c.kda = true else return null;
+         }
+         return c;
+     }
+@@ -64,12 +66,21 @@ pub const Chain = struct {
+         if (std.c.getenv("TF_GLM_PDL")) |v| if (std.mem.eql(u8, std.mem.span(v), "0")) return .{};
+         const v = std.mem.span(std.c.getenv("TF_GLM_PDL_CHAIN") orelse return all);
+         return parse(v) orelse {
+-            std.log.err("TF_GLM_PDL_CHAIN: 1, 0 or a comma list of reduce, hc, p2p, moe (not '{s}'): the chain stays off", .{v});
++            std.log.err("TF_GLM_PDL_CHAIN: 1, 0 or a comma list of reduce, hc, p2p, moe, kda (kda by name only) (not '{s}'): the chain stays off", .{v});
+             return .{};
+         };
+     }
+ };
+ 
++test "TF_GLM_PDL_CHAIN names the KDA chain by name only: kda alone or in a list, never in all or 1" {
++    try std.testing.expect(Chain.parse("kda").?.kda);
++    try std.testing.expect(!Chain.parse("kda").?.hc and !Chain.parse("kda").?.moe and !Chain.parse("kda").?.reduce and !Chain.parse("kda").?.p2p);
++    try std.testing.expect(Chain.parse("hc,kda").?.kda and Chain.parse("hc,kda").?.hc);
++    try std.testing.expect(Chain.parse("reduce,hc,p2p,moe,kda").?.kda);
++    try std.testing.expect(!Chain.all.kda and !Chain.parse("1").?.kda and !Chain.parse("0").?.kda);
++    try std.testing.expect(Chain.parse("kdx") == null);
++}
++
+ /// glm_mm's bf16 kernels by row bucket, the K-slice reduce and the tiling.
+ pub const Kernels = struct {
+     by_rows: [4]cuda.Function, // bf16: 16, 32, 64, 128 rows a block
+-- 
+2.43.0
+

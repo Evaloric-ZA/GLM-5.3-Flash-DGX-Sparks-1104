@@ -1,0 +1,5 @@
+# mixed load: 2 decoders (400 tok each) with a ~94K cold prefill admitted mid-flight
+  trial 1: decode   11.3 tok/s total (5.7, 5.7 each)  prefill 94889 tok at 1646 tok/s (TTFT 57.7s, cached 0)  shas ['4139e2222d03', '8bc0ba3abd91']
+  trial 2: decode   11.3 tok/s total (5.7, 5.7 each)  prefill 95041 tok at 1644 tok/s (TTFT 57.8s, cached 0)  shas ['4139e2222d03', '8bc0ba3abd91']
+  -> median decode under load 11.3 tok/s, median prefill under load 1645 tok/s
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/mixed-p0096.json

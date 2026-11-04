@@ -1,0 +1,4 @@
+[onetoken105] 1-stream prose: tok/s 38.3/38.3 | tok/round 2.07 | ms/round 53.9 | accepted 57% | sha 64c908210a9e
+[onetoken105] 1-stream code: tok/s 56.6/56.5 | tok/round 3.77 | ms/round 66.6 | accepted 75% | sha 315341215112
+[onetoken105] 4-stream prose, rep 0: total 77.5 tok/s | per stream 20.0 19.4 19.1 19.0 | tok/round 2.04 | ms/round 105 | accepted 61%
+[onetoken105] 4-stream prose, rep 1: total 80.2 tok/s | per stream 20.9 20.4 19.5 19.5 | tok/round 2.10 | ms/round 105 | accepted 64%

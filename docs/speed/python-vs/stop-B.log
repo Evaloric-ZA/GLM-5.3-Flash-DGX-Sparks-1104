@@ -1,0 +1,8 @@
+[stop.sh] Stopping glm53-flash-tf here, on zurih@10.0.22.2 (up to 30s)
+mkdir: cannot create directory ‘/home/mia/.cache/tensorfold-glm53/logs’: Permission denied
+[stop.sh] WARN: could not save rank 0's log to /home/mia/.cache/tensorfold-glm53/logs
+[stop.sh] Stopped and removed rank 0 here
+mkdir: cannot create directory ‘/home/zurih/.cache/tensorfold-glm53/logs’: Permission denied
+[stop.sh] WARN: could not save rank 1's log on zurih@10.0.22.2
+[stop.sh] Stopped and removed rank 1 on zurih@10.0.22.2
+[stop.sh] Stopped and removed glm53-flash-tf here, on zurih@10.0.22.2; its GPU memory is free again

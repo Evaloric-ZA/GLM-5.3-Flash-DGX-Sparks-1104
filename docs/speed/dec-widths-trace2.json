@@ -1,0 +1,57 @@
+{
+ "2": {
+  "trials": [
+   {
+    "total_tps": 42.69144884774268,
+    "per_stream_tps": 21.34572442387134,
+    "tokens": 600,
+    "elapsed": 14.054336786270142,
+    "tokens_per_round": [
+     2.0134228187919465,
+     2.158273381294964
+    ],
+    "acceptance": [
+     0.29354207436399216,
+     0.33613445378151263
+    ],
+    "drafted": [
+     511,
+     476
+    ],
+    "rounds": [
+     149,
+     139
+    ],
+    "decode_tps": [
+     21.90117033649677,
+     23.4065775995914
+    ],
+    "round_ms": [
+     91.93220215436241,
+     92.20798607194244
+    ],
+    "sum_rounds": 288,
+    "shas": [
+     "098eda60391f",
+     "becb8a0f1b98"
+    ],
+    "cached": [
+     0,
+     0
+    ]
+   }
+  ],
+  "median_total_tps": 42.69144884774268,
+  "spread_pct": 0.0,
+  "median_round_ms": 92.07009411315244,
+  "round_ms_spread_pct": 0.2995369128667287,
+  "tokens_identical": true,
+  "rounds_identical": true,
+  "tokens": [
+   600
+  ],
+  "rounds": [
+   288
+  ]
+ }
+}

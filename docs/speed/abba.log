@@ -1,0 +1,181 @@
+### ABBA  2026-11-03T07:13:32Z
+
+########## a1 (in)  07:13:32Z ##########
+  patches/engine now has: 2 of 0096/0097
+[safestart] 07:13:32Z verifying both ranks are stopped (worker=zurih@10.0.34.4)
+[safestart] both ranks absent after 1x5s - safe to start
+[safestart] 07:13:34Z ./start.sh restart
+[safestart] HEALTHY after ~125s at 07:15:35Z
+Endpoint: http://127.0.0.1:8888/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/.state/context-fit.tsv to probe again).
+KV pool: 4098 pages = 2098176 tokens shared by 4 streams (one request up to 1048576).
+image=tensorfold-glm53-spark:eeb98fe202ff
+=== coverage pass a1  07:15:35Z ===
+serving image=tensorfold-glm53-spark:eeb98fe202ff
+--- 4 streams, 10 trials (resolve the sub-1% question) ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 10 trials, max_tokens 250
+  4 stream(s) trial 1:   55.5 tok/s total,  13.9/stream  tok 1000 rounds  478  round 131.2 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  4 stream(s) trial 2:   39.9 tok/s total,  10.0/stream  tok 1000 rounds  479  round 116.0 ms  tok/round 2.092  accept 0.632  drafted/round 1.71
+  4 stream(s) trial 3:   33.5 tok/s total,   8.4/stream  tok 1000 rounds  478  round 132.0 ms  tok/round 2.096  accept 0.615  drafted/round 1.78
+  4 stream(s) trial 4:   52.7 tok/s total,  13.2/stream  tok 1000 rounds  478  round 136.1 ms  tok/round 2.097  accept 0.630  drafted/round 1.73
+  4 stream(s) trial 5:   49.2 tok/s total,  12.3/stream  tok 1000 rounds  478  round 129.7 ms  tok/round 2.096  accept 0.630  drafted/round 1.73
+  4 stream(s) trial 6:   55.8 tok/s total,  13.9/stream  tok 1000 rounds  480  round 123.6 ms  tok/round 2.087  accept 0.625  drafted/round 1.73
+  4 stream(s) trial 7:   48.5 tok/s total,  12.1/stream  tok 1000 rounds  478  round 138.2 ms  tok/round 2.097  accept 0.630  drafted/round 1.73
+  4 stream(s) trial 8:   47.0 tok/s total,  11.8/stream  tok 1000 rounds  479  round 144.0 ms  tok/round 2.092  accept 0.627  drafted/round 1.73
+  4 stream(s) trial 9:   59.4 tok/s total,  14.9/stream  tok 1000 rounds  480  round 124.0 ms  tok/round 2.087  accept 0.626  drafted/round 1.72
+  4 stream(s) trial 10:   50.0 tok/s total,  12.5/stream  tok 1000 rounds  479  round 143.6 ms  tok/round 2.092  accept 0.626  drafted/round 1.73
+  -> 4 stream(s): median 49.6 tok/s (mean 49.16 +- se 2.45, n=10), spread 52.20%  |  round p50 132.13 p95 156.70 max 158.52 ms, spread 57.00%  |  tokens identical  rounds [478, 479, 480]
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-a1-c4.json
+# NOISE FLOOR 4 stream(s): tok/s spread 52.20% -> a win must exceed 104.40%; round_ms spread 57.00% -> 114.01%
+--- long-context decode, ~45K in the window, 1 and 4 streams ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 3 trials, max_tokens 250, context filler 12000 words
+  1 stream(s) trial 1:    6.5 tok/s total,   6.5/stream  tok  250 rounds  126  round   nan ms  tok/round 1.984  accept 0.574  drafted/round 1.71
+  1 stream(s) trial 2:    9.6 tok/s total,   9.6/stream  tok  250 rounds  126  round 197.4 ms  tok/round 1.984  accept 0.582  drafted/round 1.69
+  1 stream(s) trial 3:   13.4 tok/s total,  13.4/stream  tok  250 rounds  125  round 140.1 ms  tok/round 2.000  accept 0.584  drafted/round 1.71
+  -> 1 stream(s): median 9.6 tok/s (mean 9.87 +- se 1.99, n=3), spread 71.31%  |  round p50 168.73 p95 197.36 max 197.36 ms, spread 33.94%  |  tokens identical  rounds [125, 126]
+  4 stream(s) trial 1:   52.4 tok/s total,  13.1/stream  tok 1000 rounds  464  round 128.9 ms  tok/round 2.162  accept 0.645  drafted/round 1.79
+  4 stream(s) trial 2:   46.0 tok/s total,  11.5/stream  tok 1000 rounds  464  round 135.4 ms  tok/round 2.163  accept 0.642  drafted/round 1.80
+  4 stream(s) trial 3:   14.1 tok/s total,   3.5/stream  tok 1000 rounds  451  round 310.6 ms  tok/round 2.221  accept 0.642  drafted/round 1.89
+  -> 4 stream(s): median 46.0 tok/s (mean 37.49 +- se 11.83, n=3), spread 83.27%  |  round p50 131.63 p95 598.64 max 598.64 ms, spread 398.49%  |  tokens identical  rounds [451, 464]
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-a1-ctx.json
+# NOISE FLOOR 1 stream(s): tok/s spread 71.31% -> a win must exceed 142.61%; round_ms spread 33.94% -> 67.87%
+# NOISE FLOOR 4 stream(s): tok/s spread 83.27% -> a win must exceed 166.54%; round_ms spread 398.49% -> 796.98%
+--- mixed prefill + decode ---
+# mixed load: 2 decoders (400 tok each) with a ~94K cold prefill admitted mid-flight
+  trial 1: decode    8.9 tok/s total (4.5, 4.5 each)  prefill 94889 tok at 1512 tok/s (TTFT 62.7s, cached 0)  shas ['4139e2222d03', '8bc0ba3abd91']
+  trial 2: decode   10.6 tok/s total (5.3, 5.4 each)  prefill 95041 tok at 1640 tok/s (TTFT 57.9s, cached 0)  shas ['4139e2222d03', '8bc0ba3abd91']
+  -> median decode under load 9.7 tok/s, median prefill under load 1576 tok/s
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/mixed-a1.json
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8888
+  prose         25 tok -> sha 87fa94aff290   90 out  'The sky appears blue because sunlight is compo'
+  code          30 tok -> sha 2e49486f633d  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      19 tok -> sha 39fcf5dc3ba3   41 out  '**Necessary** spelled backwards is: **yrassece'
+  math          26 tok -> sha 690b2a33a2d6  120 out  '# 847 × 23\n\n## Method: Breaking apart 23\n\n**St'
+  zig           31 tok -> sha 60b55b74b419   48 out  '```zig\nfn sum(slice: []const u32) u32 {\n    va'
+  json          32 tok -> sha 29a950f3434c   21 out  '{"name": "Elena Marsh", "age": 34, "city": "Po'
+  boundary   10674 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45604 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/contract-a1.json
+=== coverage pass a1 done  07:25:49Z ===
+
+########## b1 (out)  07:25:49Z ##########
+  patches/engine now has: 0 of 0096/0097
+[safestart] 07:25:49Z verifying both ranks are stopped (worker=zurih@10.0.34.4)
+[safestart] both ranks absent after 1x5s - safe to start
+[safestart] 07:25:52Z ./start.sh restart
+[safestart] HEALTHY after ~130s at 07:27:57Z
+[tensorfold] 192.168.1.130 "GET /health HTTP/1.1" 200 -
+[tensorfold] 192.168.1.130 "GET /metrics HTTP/1.1" 200 -
+[tensorfold] 127.0.0.1 "GET /health HTTP/1.1" 200 -
+image=tensorfold-glm53-spark:503f271d5532
+=== coverage pass b1  07:27:57Z ===
+serving image=tensorfold-glm53-spark:503f271d5532
+--- 4 streams, 10 trials (resolve the sub-1% question) ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 10 trials, max_tokens 250
+  4 stream(s) trial 1:   67.1 tok/s total,  16.8/stream  tok 1000 rounds  476  round 113.9 ms  tok/round 2.105  accept 0.614  drafted/round 1.79
+  4 stream(s) trial 2:   57.1 tok/s total,  14.3/stream  tok 1000 rounds  476  round 129.8 ms  tok/round 2.105  accept 0.616  drafted/round 1.78
+  4 stream(s) trial 3:   39.5 tok/s total,   9.9/stream  tok 1000 rounds  476  round 115.6 ms  tok/round 2.105  accept 0.618  drafted/round 1.78
+  4 stream(s) trial 4:   28.2 tok/s total,   7.0/stream  tok 1000 rounds  477  round 157.7 ms  tok/round 2.100  accept 0.614  drafted/round 1.78
+  4 stream(s) trial 5:   54.4 tok/s total,  13.6/stream  tok 1000 rounds  476  round 135.0 ms  tok/round 2.105  accept 0.614  drafted/round 1.79
+  4 stream(s) trial 6:   49.5 tok/s total,  12.4/stream  tok 1000 rounds  477  round 127.1 ms  tok/round 2.100  accept 0.614  drafted/round 1.78
+  4 stream(s) trial 7:   49.4 tok/s total,  12.4/stream  tok 1000 rounds  477  round 139.8 ms  tok/round 2.100  accept 0.615  drafted/round 1.78
+  4 stream(s) trial 8:   36.0 tok/s total,   9.0/stream  tok 1000 rounds  476  round 146.5 ms  tok/round 2.105  accept 0.615  drafted/round 1.78
+  4 stream(s) trial 9:   35.1 tok/s total,   8.8/stream  tok 1000 rounds  477  round 119.1 ms  tok/round 2.100  accept 0.607  drafted/round 1.80
+  4 stream(s) trial 10:   47.6 tok/s total,  11.9/stream  tok 1000 rounds  476  round 134.1 ms  tok/round 2.105  accept 0.615  drafted/round 1.78
+  -> 4 stream(s): median 48.5 tok/s (mean 46.39 +- se 3.72, n=10), spread 80.38%  |  round p50 129.04 p95 161.56 max 213.78 ms, spread 99.21%  |  tokens identical  rounds [476, 477]
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-b1-c4.json
+# NOISE FLOOR 4 stream(s): tok/s spread 80.38% -> a win must exceed 160.76%; round_ms spread 99.21% -> 198.42%
+--- long-context decode, ~45K in the window, 1 and 4 streams ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 3 trials, max_tokens 250, context filler 12000 words
+  1 stream(s) trial 1:    5.2 tok/s total,   5.2/stream  tok  250 rounds  125  round   nan ms  tok/round 2.000  accept 0.576  drafted/round 1.74
+  1 stream(s) trial 2:   14.4 tok/s total,  14.4/stream  tok  250 rounds  125  round 130.1 ms  tok/round 2.000  accept 0.566  drafted/round 1.77
+  1 stream(s) trial 3:   18.5 tok/s total,  18.5/stream  tok  250 rounds  125  round  99.1 ms  tok/round 2.000  accept 0.571  drafted/round 1.75
+  -> 1 stream(s): median 14.4 tok/s (mean 12.69 +- se 3.91, n=3), spread 92.07%  |  round p50 114.64 p95 130.15 max 130.15 ms, spread 27.05%  |  tokens identical  rounds identical
+  4 stream(s) trial 1:   13.5 tok/s total,   3.4/stream  tok 1000 rounds  445  round 424.8 ms  tok/round 2.248  accept 0.639  drafted/round 1.95
+  4 stream(s) trial 2:    9.6 tok/s total,   2.4/stream  tok 1000 rounds  444  round 269.3 ms  tok/round 2.257  accept 0.665  drafted/round 1.87
+  4 stream(s) trial 3:   12.7 tok/s total,   3.2/stream  tok 1000 rounds  452  round 195.1 ms  tok/round 2.216  accept 0.628  drafted/round 1.92
+  -> 4 stream(s): median 12.7 tok/s (mean 11.93 +- se 1.21, n=3), spread 31.28%  |  round p50 269.32 p95 606.90 max 606.90 ms, spread 202.30%  |  tokens identical  rounds [444, 445, 452]
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-b1-ctx.json
+# NOISE FLOOR 1 stream(s): tok/s spread 92.07% -> a win must exceed 184.15%; round_ms spread 27.05% -> 54.10%
+# NOISE FLOOR 4 stream(s): tok/s spread 31.28% -> a win must exceed 62.56%; round_ms spread 202.30% -> 404.59%
+--- mixed prefill + decode ---
+# mixed load: 2 decoders (400 tok each) with a ~94K cold prefill admitted mid-flight
+  trial 1: decode   10.6 tok/s total (5.3, 5.4 each)  prefill 94889 tok at 1637 tok/s (TTFT 58.0s, cached 0)  shas ['4139e2222d03', '8bc0ba3abd91']
+  trial 2: decode   10.6 tok/s total (5.3, 5.4 each)  prefill 95041 tok at 1639 tok/s (TTFT 58.0s, cached 0)  shas ['4139e2222d03', '8bc0ba3abd91']
+  -> median decode under load 10.6 tok/s, median prefill under load 1638 tok/s
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/mixed-b1.json
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8888
+  prose         25 tok -> sha 87fa94aff290   90 out  'The sky appears blue because sunlight is compo'
+  code          30 tok -> sha 2e49486f633d  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      19 tok -> sha 39fcf5dc3ba3   41 out  '**Necessary** spelled backwards is: **yrassece'
+  math          26 tok -> sha 690b2a33a2d6  120 out  '# 847 × 23\n\n## Method: Breaking apart 23\n\n**St'
+  zig           31 tok -> sha 60b55b74b419   48 out  '```zig\nfn sum(slice: []const u32) u32 {\n    va'
+  json          32 tok -> sha 29a950f3434c   21 out  '{"name": "Elena Marsh", "age": 34, "city": "Po'
+  boundary   10674 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45604 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/contract-b1.json
+=== coverage pass b1 done  07:40:40Z ===
+
+########## a2 (in)  07:40:40Z ##########
+  patches/engine now has: 2 of 0096/0097
+[safestart] 07:40:40Z verifying both ranks are stopped (worker=zurih@10.0.34.4)
+[safestart] both ranks absent after 1x5s - safe to start
+[safestart] 07:40:42Z ./start.sh restart
+[safestart] HEALTHY after ~135s at 07:42:53Z
+Endpoint: http://127.0.0.1:8888/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/.state/context-fit.tsv to probe again).
+KV pool: 6062 pages = 3103744 tokens shared by 4 streams (one request up to 1048576).
+image=tensorfold-glm53-spark:eeb98fe202ff
+=== coverage pass a2  07:42:53Z ===
+serving image=tensorfold-glm53-spark:eeb98fe202ff
+--- 4 streams, 10 trials (resolve the sub-1% question) ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 10 trials, max_tokens 250
+  4 stream(s) trial 1:   68.4 tok/s total,  17.1/stream  tok 1000 rounds  478  round 111.1 ms  tok/round 2.097  accept 0.632  drafted/round 1.72
+  4 stream(s) trial 2:   57.3 tok/s total,  14.3/stream  tok 1000 rounds  478  round 127.5 ms  tok/round 2.097  accept 0.630  drafted/round 1.73
+  4 stream(s) trial 3:   33.4 tok/s total,   8.3/stream  tok 1000 rounds  476  round 122.5 ms  tok/round 2.104  accept 0.627  drafted/round 1.75
+  4 stream(s) trial 4:   44.9 tok/s total,  11.2/stream  tok 1000 rounds  479  round 157.6 ms  tok/round 2.092  accept 0.626  drafted/round 1.73
+  4 stream(s) trial 5:   27.9 tok/s total,   7.0/stream  tok 1000 rounds  478  round 180.5 ms  tok/round 2.096  accept 0.615  drafted/round 1.77
+  4 stream(s) trial 6:   36.5 tok/s total,   9.1/stream  tok 1000 rounds  478  round 186.8 ms  tok/round 2.096  accept 0.624  drafted/round 1.74
+  4 stream(s) trial 7:   40.8 tok/s total,  10.2/stream  tok 1000 rounds  476  round 110.6 ms  tok/round 2.104  accept 0.626  drafted/round 1.75
+  4 stream(s) trial 8:   26.3 tok/s total,   6.6/stream  tok 1000 rounds  476  round 137.8 ms  tok/round 2.105  accept 0.620  drafted/round 1.77
+  4 stream(s) trial 9:   40.3 tok/s total,  10.1/stream  tok 1000 rounds  476  round 134.8 ms  tok/round 2.105  accept 0.626  drafted/round 1.75
+  4 stream(s) trial 10:   55.3 tok/s total,  13.8/stream  tok 1000 rounds  476  round 110.6 ms  tok/round 2.105  accept 0.623  drafted/round 1.76
+  -> 4 stream(s): median 40.5 tok/s (mean 43.11 +- se 4.29, n=10), spread 103.69%  |  round p50 122.47 p95 215.47 max 246.98 ms, spread 134.06%  |  tokens identical  rounds [476, 478, 479]
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-a2-c4.json
+# NOISE FLOOR 4 stream(s): tok/s spread 103.69% -> a win must exceed 207.38%; round_ms spread 134.06% -> 268.12%
+--- long-context decode, ~45K in the window, 1 and 4 streams ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 3 trials, max_tokens 250, context filler 12000 words
+  1 stream(s) trial 1:    7.6 tok/s total,   7.6/stream  tok  250 rounds  123  round   nan ms  tok/round 2.033  accept 0.562  drafted/round 1.84
+  1 stream(s) trial 2:    7.6 tok/s total,   7.6/stream  tok  250 rounds  124  round   nan ms  tok/round 2.016  accept 0.558  drafted/round 1.82
+  1 stream(s) trial 3:    7.6 tok/s total,   7.6/stream  tok  250 rounds  124  round   nan ms  tok/round 2.016  accept 0.558  drafted/round 1.82
+Traceback (most recent call last):
+  File "/home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/dec.py", line 199, in <module>
+    else: sweep(label)
+          ^^^^^^^^^^^^
+  File "/home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/dec.py", line 182, in sweep
+    f"round p50 {rmed:.2f} p95 {rp95:.2f} max {rmax:.2f} ms, spread {rspread:.2f}%  |  "
+                ^^^^^^^^^^
+TypeError: unsupported format string passed to NoneType.__format__
+--- mixed prefill + decode ---
+# mixed load: 2 decoders (400 tok each) with a ~94K cold prefill admitted mid-flight
+  trial 1: decode   11.3 tok/s total (5.7, 5.7 each)  prefill 94889 tok at 1651 tok/s (TTFT 57.5s, cached 0)  shas ['4139e2222d03', '8bc0ba3abd91']
+  trial 2: decode   11.3 tok/s total (5.7, 5.7 each)  prefill 95041 tok at 1649 tok/s (TTFT 57.6s, cached 0)  shas ['4139e2222d03', '8bc0ba3abd91']
+  -> median decode under load 11.3 tok/s, median prefill under load 1650 tok/s
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/mixed-a2.json
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8888
+  prose         25 tok -> sha 87fa94aff290   90 out  'The sky appears blue because sunlight is compo'
+  code          30 tok -> sha 2e49486f633d  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      19 tok -> sha 39fcf5dc3ba3   41 out  '**Necessary** spelled backwards is: **yrassece'
+  math          26 tok -> sha 690b2a33a2d6  120 out  '# 847 × 23\n\n## Method: Breaking apart 23\n\n**St'
+  zig           31 tok -> sha 60b55b74b419   48 out  '```zig\nfn sum(slice: []const u32) u32 {\n    va'
+  json          32 tok -> sha 29a950f3434c   21 out  '{"name": "Elena Marsh", "age": 34, "city": "Po'
+  boundary   10674 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45604 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/contract-a2.json
+=== coverage pass a2 done  07:51:46Z ===
+
+### ABBA done  2026-11-03T07:51:46Z
+### final state: 0096/0097 present (2 files), serving the 0096 image

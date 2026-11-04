@@ -1,0 +1,48 @@
+=== coverage pass repro1  08:51:06Z ===
+serving image=tensorfold-glm53-spark:eeb98fe202ff
+--- 4 streams, 10 trials (resolve the sub-1% question) ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 10 trials, max_tokens 250
+  4 stream(s) trial 1:   69.4 tok/s total,  17.3/stream  tok 1000 rounds  478  round 109.8 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  4 stream(s) trial 2:   69.7 tok/s total,  17.4/stream  tok 1000 rounds  478  round 109.9 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  4 stream(s) trial 3:   69.7 tok/s total,  17.4/stream  tok 1000 rounds  478  round 109.9 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  4 stream(s) trial 4:   69.5 tok/s total,  17.4/stream  tok 1000 rounds  478  round 109.9 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  4 stream(s) trial 5:   69.8 tok/s total,  17.4/stream  tok 1000 rounds  478  round 109.8 ms  tok/round 2.097  accept 0.632  drafted/round 1.72
+  4 stream(s) trial 6:   69.8 tok/s total,  17.5/stream  tok 1000 rounds  478  round 109.5 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  4 stream(s) trial 7:   69.8 tok/s total,  17.4/stream  tok 1000 rounds  478  round 109.8 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  4 stream(s) trial 8:   69.5 tok/s total,  17.4/stream  tok 1000 rounds  478  round 110.1 ms  tok/round 2.097  accept 0.632  drafted/round 1.72
+  4 stream(s) trial 9:   69.7 tok/s total,  17.4/stream  tok 1000 rounds  478  round 109.7 ms  tok/round 2.097  accept 0.632  drafted/round 1.72
+  4 stream(s) trial 10:   69.8 tok/s total,  17.4/stream  tok 1000 rounds  478  round 109.6 ms  tok/round 2.097  accept 0.633  drafted/round 1.72
+  -> 4 stream(s): median 69.7 tok/s (mean 69.67 +- se 0.05, n=10), spread 0.67%  |  round p50 109.17 p95 115.10 max 115.18 ms, spread 8.64%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-repro1-c4.json
+# NOISE FLOOR 4 stream(s): tok/s spread 0.67% -> a win must exceed 1.34%; round_ms spread 8.64% -> 17.29%
+--- long-context decode, ~45K in the window, 1 and 4 streams ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 3 trials, max_tokens 250, context filler 12000 words
+  1 stream(s) trial 1:    7.6 tok/s total,   7.6/stream  tok  250 rounds  129  round   nan ms  tok/round 1.938  accept 0.543  drafted/round 1.71
+  1 stream(s) trial 2:    7.6 tok/s total,   7.6/stream  tok  250 rounds  129  round   nan ms  tok/round 1.938  accept 0.543  drafted/round 1.71
+  1 stream(s) trial 3:    7.6 tok/s total,   7.6/stream  tok  250 rounds  129  round   nan ms  tok/round 1.938  accept 0.543  drafted/round 1.71
+  -> 1 stream(s): median 7.6 tok/s (mean 7.58 +- se 0.00, n=3), spread 0.18%  |  round p50 n/a p95 n/a max n/a ms, spread n/a%  |  tokens identical  rounds identical
+  4 stream(s) trial 1:    8.3 tok/s total,   2.1/stream  tok 1000 rounds  467  round 529.3 ms  tok/round 2.152  accept 0.630  drafted/round 1.81
+  4 stream(s) trial 2:    8.3 tok/s total,   2.1/stream  tok 1000 rounds  467  round 529.7 ms  tok/round 2.152  accept 0.630  drafted/round 1.81
+  4 stream(s) trial 3:    8.3 tok/s total,   2.1/stream  tok 1000 rounds  467  round 529.6 ms  tok/round 2.152  accept 0.630  drafted/round 1.81
+  -> 4 stream(s): median 8.3 tok/s (mean 8.28 +- se 0.00, n=3), spread 0.04%  |  round p50 529.60 p95 529.65 max 529.65 ms, spread 0.06%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-repro1-ctx.json
+# NOISE FLOOR 1 stream(s): tok/s spread 0.18% -> a win must exceed 0.37%; no round ms data
+# NOISE FLOOR 4 stream(s): tok/s spread 0.04% -> a win must exceed 0.08%; round_ms spread 0.06% -> 0.12%
+--- mixed prefill + decode ---
+# mixed load: 2 decoders (400 tok each) with a ~94K cold prefill admitted mid-flight
+  trial 1: decode   11.4 tok/s total (5.7, 5.8 each)  prefill 94889 tok at 1650 tok/s (TTFT 57.5s, cached 0)  shas ['4139e2222d03', '8bc0ba3abd91']
+  trial 2: decode   11.3 tok/s total (5.7, 5.7 each)  prefill 95041 tok at 1649 tok/s (TTFT 57.6s, cached 0)  shas ['4139e2222d03', '8bc0ba3abd91']
+  -> median decode under load 11.3 tok/s, median prefill under load 1650 tok/s
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/mixed-repro1.json
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8888
+  prose         25 tok -> sha 87fa94aff290   90 out  'The sky appears blue because sunlight is compo'
+  code          30 tok -> sha 2e49486f633d  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      19 tok -> sha 39fcf5dc3ba3   41 out  '**Necessary** spelled backwards is: **yrassece'
+  math          26 tok -> sha 690b2a33a2d6  120 out  '# 847 × 23\n\n## Method: Breaking apart 23\n\n**St'
+  zig           31 tok -> sha 60b55b74b419   48 out  '```zig\nfn sum(slice: []const u32) u32 {\n    va'
+  json          32 tok -> sha 29a950f3434c   21 out  '{"name": "Elena Marsh", "age": 34, "city": "Po'
+  boundary   10674 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45604 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/contract-repro1.json
+=== coverage pass repro1 done  09:04:12Z ===

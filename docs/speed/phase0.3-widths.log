@@ -1,0 +1,105 @@
+### PHASE 0.1b fixed-prompt decode baseline (no restart) 23:04:53Z
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 3 trials, max_tokens 250
+  1 stream(s) trial 1:   36.8 tok/s total,  36.8/stream  tok  250 rounds  120  round  53.9 ms  tok/round 2.083  accept 0.591  drafted/round 1.83
+  1 stream(s) trial 2:   37.1 tok/s total,  37.1/stream  tok  250 rounds  120  round  53.5 ms  tok/round 2.083  accept 0.591  drafted/round 1.83
+  1 stream(s) trial 3:   37.1 tok/s total,  37.1/stream  tok  250 rounds  120  round  53.5 ms  tok/round 2.083  accept 0.591  drafted/round 1.83
+  -> 1 stream(s): median 37.1 tok/s, spread 1.02%  |  round 53.52 ms, spread 0.66%  |  tokens identical  rounds identical
+  2 stream(s) trial 1:   52.7 tok/s total,  26.3/stream  tok  500 rounds  236  round  76.3 ms  tok/round 2.119  accept 0.620  drafted/round 1.80
+  2 stream(s) trial 2:   52.7 tok/s total,  26.4/stream  tok  500 rounds  236  round  76.4 ms  tok/round 2.119  accept 0.620  drafted/round 1.80
+  2 stream(s) trial 3:   52.8 tok/s total,  26.4/stream  tok  500 rounds  236  round  76.2 ms  tok/round 2.119  accept 0.620  drafted/round 1.80
+  -> 2 stream(s): median 52.7 tok/s, spread 0.21%  |  round 76.31 ms, spread 2.40%  |  tokens identical  rounds identical
+  4 stream(s) trial 1:   68.3 tok/s total,  17.1/stream  tok 1000 rounds  475  round 113.1 ms  tok/round 2.109  accept 0.618  drafted/round 1.78
+  4 stream(s) trial 2:   68.5 tok/s total,  17.1/stream  tok 1000 rounds  475  round 112.9 ms  tok/round 2.109  accept 0.618  drafted/round 1.78
+  4 stream(s) trial 3:   68.3 tok/s total,  17.1/stream  tok 1000 rounds  475  round 113.0 ms  tok/round 2.109  accept 0.618  drafted/round 1.78
+  -> 4 stream(s): median 68.3 tok/s, spread 0.29%  |  round 111.87 ms, spread 6.58%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-base2.json
+# NOISE FLOOR 1 stream(s): tok/s spread 1.02% -> a win must exceed 2.05%; round_ms spread 0.66% -> 1.32%
+# NOISE FLOOR 2 stream(s): tok/s spread 0.21% -> a win must exceed 0.42%; round_ms spread 2.40% -> 4.80%
+# NOISE FLOOR 4 stream(s): tok/s spread 0.29% -> a win must exceed 0.57%; round_ms spread 6.58% -> 13.17%
+
+### PHASE 0.3 trace leg: forced widths 1..8 cycled 23:06:26Z
+### trace leg widths  2026-11-02T23:06:26Z
+  set TF_GLM_DFLASH2_TRACE=1
+  set TF_GLM_DFLASH2_FORCE=1,2,3,4,5,6,7,8
+--- restart ---
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 83.58 GiB; 4 streams at once, the engine's own and 3 more taking 4098 pages of 512 rows (12.47 GiB) as they need them (enough for one at a 1048576-token window), 417 MiB fixed each, of 18.8 GiB left after a 8.0 GiB reserve; prompts in passes of up to 4096 rows, a 5.2 GiB prompt cache; own glue kernels
+--- workload (fixed prompts, greedy; widths are cycled by FORCE when set) ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 2 trials, max_tokens 300
+  1 stream(s) trial 1:   30.7 tok/s total,  30.7/stream  tok  300 rounds  149  round  63.3 ms  tok/round 2.013  accept 0.294  drafted/round 3.43
+  1 stream(s) trial 2:   30.8 tok/s total,  30.8/stream  tok  300 rounds  149  round  63.1 ms  tok/round 2.013  accept 0.294  drafted/round 3.43
+  -> 1 stream(s): median 30.7 tok/s, spread 0.22%  |  round 63.22 ms, spread 0.27%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-widths-trace.json
+# NOISE FLOOR 1 stream(s): tok/s spread 0.22% -> a win must exceed 0.45%; round_ms spread 0.27% -> 0.54%
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8888, 1 trials, max_tokens 300
+  2 stream(s) trial 1:   42.7 tok/s total,  21.3/stream  tok  600 rounds  288  round  92.1 ms  tok/round 2.086  accept 0.315  drafted/round 3.43
+  -> 2 stream(s): median 42.7 tok/s, spread 0.00%  |  round 92.07 ms, spread 0.30%  |  tokens identical  rounds identical
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/dec-widths-trace2.json
+# NOISE FLOOR 2 stream(s): tok/s spread 0.00% -> a win must exceed 0.00%; round_ms spread 0.30% -> 0.60%
+--- harvest ---
+  587 dft records in docs/speed/dft-widths.log
+# 587 dft trace records from docs/speed/dft-widths.log
+
+## lone windows: 309 observations
+ rows      n  median v ms   mean v ms      p10      p90
+    1     40        37.97       38.44    37.24    41.63
+    2     42        44.77       44.83    43.20    46.79
+    3     39        50.89       51.02    48.52    54.37
+    4     40        56.03       56.66    54.27    60.34
+    5     37        61.27       61.76    59.28    65.37
+    6     37        66.23       66.95    63.49    70.84
+    7     37        73.05       73.21    69.42    76.74
+    8     37        78.55       79.05    73.48    84.60
+  fit on medians   : a = 38.73 ms, b = 5.68 ms/row  (b/a = 0.147, r2 = 0.9983, rmse 0.54, n=8)
+  fit on all points: a = 39.03 ms, b = 5.70 ms/row  (b/a = 0.146, r2 = 0.9578, rmse 2.75, n=309)
+  residual check (median v minus fitted):
+    rows 1:   -0.76 ms
+    rows 2:   +0.36 ms
+    rows 3:   +0.81 ms
+    rows 4:   +0.27 ms
+    rows 5:   -0.16 ms
+    rows 6:   -0.88 ms
+    rows 7:   +0.27 ms
+    rows 8:   +0.09 ms
+  drafter pass: median 5.92 ms, mean 5.70 ms, n=309
+
+(regrouped 278 shared records into 139 forwards; lanes per forward: {2: 139})
+
+## shared forwards: 139 observations  (rows = TOTAL rows in the forward)
+ rows      n  median v ms   mean v ms      p10      p90
+    2     18        48.67       48.17    47.33    49.08
+    4     18        62.03       62.31    58.54    65.49
+    5      1        69.46       69.46    69.46    69.46
+    6     17        74.52       75.49    71.56    82.48
+    8     17        83.82       84.30    81.93    88.17
+   10     17        94.23       94.08    90.91    97.50
+   12     17       104.07      103.81    96.03   114.05
+   14     18       111.76      112.14   107.66   116.82
+   16     16       121.26      121.78   114.08   131.77
+  fit on medians   : a = 47.38 ms, b = 5.05 ms/row  (b/a = 0.107, r2 = 0.9934, rmse 1.86, n=9)
+  fit on all points: a = 46.78 ms, b = 5.12 ms/row  (b/a = 0.109, r2 = 0.9706, rmse 4.09, n=139)
+  residual check (median v minus fitted):
+    rows 2:   -3.76 ms
+    rows 4:   -0.50 ms
+    rows 5:   +1.88 ms
+    rows 6:   +1.89 ms
+    rows 8:   +1.09 ms
+    rows 10:   +1.40 ms
+    rows 12:   +1.15 ms
+    rows 14:   -1.27 ms
+    rows 16:   -1.87 ms
+  drafter pass: median 6.83 ms, mean 6.51 ms, n=139
+
+## landing by chain position (windows with >= k drafts offered)
+ pos  offered  landed  cond. rate
+   1      511     358       0.701
+   2      296     155       0.524
+   3      123      66       0.537
+   4       53      23       0.434
+   5       18       5       0.278
+   6        4       3       0.750
+
+# sm_120 seed for comparison: a = 9.40 ms, b = 1.31 ms/row (b/a = 0.139), draft 1.37 ms
+# gb10 lane tables:  window 52.0 + 6.8/row (b/a = 0.131); shared 76.0 + 4.1/row (b/a = 0.054)
+# wrote /home/zurih/TF/GLM-5.3-Flash-EXL3-2x-DGX-Spark-TensorFold-Zig/docs/speed/trace-widths.json
+### trace leg widths done  2026-11-02T23:09:13Z
+### chain done 23:09:14Z

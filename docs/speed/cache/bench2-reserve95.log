@@ -1,0 +1,11 @@
+[reserve95] http://spark3:8888 GLM-5.3-Flash
+  single prose: {'decode_tps': 38.332078238150224, 'ttft': 0.17067527770996094, 'sha': '64c908210a9e', 'tokens': 600}
+  single code: {'decode_tps': 56.4523087180268, 'ttft': 0.19388914108276367, 'sha': '315341215112', 'tokens': 600}
+  prefill 16K: {'prompt_tokens': 15787, 'ttft': 9.271383285522461, 'prefill_tps': 1702.7664064597423}
+  prefill 64K: {'prompt_tokens': 63482, 'ttft': 36.16689658164978, 'prefill_tps': 1755.2515145081386}
+  conc2: {'per_stream_tps': [29.1, 28.2], 'sum_tps': 57.4, 'ttft_max': 0.5058538913726807}
+  conc4: {'per_stream_tps': [19.2, 19.3, 20.0, 19.6], 'sum_tps': 78.1, 'ttft_max': 0.886803150177002}
+  mixed1: {'long_prompt_tokens': 50287, 'long_ttft': 43.27, 'decoders': [{'before_tps': 36.0, 'during_tps': 11.8, 'gap_p50': 52, 'gap_p95': 90, 'gap_max': 2680, 'after_tps': 36.3}]}
+  mixed3: {'long_prompt_tokens': 50407, 'long_ttft': 43.75, 'decoders': [{'before_tps': 20.4, 'during_tps': 6.8, 'gap_p50': 93, 'gap_p95': 2456, 'gap_max': 2714, 'after_tps': 21.6}, {'before_tps': 31.8, 'during_tps': 9.7, 'gap_p50': 93, 'gap_p95': 2456, 'gap_max': 2714, 'after_tps': 27.2}, {'before_tps': 21.3, 'during_tps': 7.7, 'gap_p50': 93, 'gap_p95': 2456, 'gap_max': 2714, 'after_tps': 23.1}]}
+  prefill pair: {'alone_ttft': 17.4, 'alone_tokens': 30193, 'pair_ttft': [35.01, 22.16], 'pair_tokens': [30312, 30153]}
+[reserve95] done
