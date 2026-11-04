@@ -35,7 +35,7 @@ on their pre-registered gates; this is a measured verdict, not a guess.
 ## TP=4 (2026-11-04 evening): pair A is DOWN by the user's choice; spark1 serves all four Sparks
 
 `./start-tp4.sh` on spark1 (rank 0, port 8888; spark2/spark3/spark4 ranks 1-3 round the switchless ring; weights from
-spark1 over NFS) is LIVE on image `daa6f2cde063` (106 patches: 0106 = the mode-aware peer warm-up). RESULTS.md
+spark1 over NFS) is LIVE on image `74e19a63a9a5` (106 patches: 0106 = the mode-aware peer warm-up; `daa6f2cde063` is the same code under the label before patch 0078's credit text changed). RESULTS.md
 "TP=4 on the four-Spark ring" has the whole story: the four boots, Codex's read, the NCCL eager-connect and the
 follower environ panic, the LAN bootstrap. Stop it with `./stop-tp4.sh` on spark1; pair A restarts with `./start.sh`
 on spark3 (its local.sh untouched) once the four ranks are down. Check rank 0's startup line after every TP=4 start:

@@ -257,7 +257,7 @@ What differs from the pair (`scripts/tp4.sh`):
   planner has far more room: eight 1M-token windows and a prompt cache usually fit at the recipe's default reserve.
   Read rank 0's startup line after every start (the pages, the prompt cache, no "cannot keep one state").
 
-Measured 2026-11-04 on this kit (spark1 rank 0, image `daa6f2cde063`, 8 streams, 1M window, FP8 KV on pages, q8
+Measured 2026-11-04 on this kit (spark1 rank 0, image `74e19a63a9a5`, 8 streams, 1M window, FP8 KV on pages, q8
 dense and head, DFlash2; greedy, the same harness as the pair's numbers under [Performance](#performance)):
 
 | | two Sparks (TP=2) | four Sparks (TP=4, a ring) |

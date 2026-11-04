@@ -1567,7 +1567,7 @@ after start is unsafe under Zig 0.17's std) is noted for upstream, not patched h
 checked on the user's pointer, runs the same ring design (graph files, Ring-only, /26, NFS from spark1) on a different
 engine family whose own rendezvous never unsets NCCL_COMM_ID.
 
-**Boot 5 (image daa6f2cde063 = 106 patches, LAN bootstrap, 19:22 local): GO-1 met.** All four ranks up, loaded in
+**Boot 5 (image 74e19a63a9a5 = the same 106 patches relabelled after patch 0078's credit text changed on main at 19:07; the launcher built it on spark1 and shipped it to the three workers itself; LAN bootstrap, 19:22 local): GO-1 met.** All four ranks up, loaded in
 125.6 s (the workers' digests over NFS 40-45 s each), smoke "ready". Every rank's NCCL report names exactly its two
 neighbours (`rank 0 NET/IB (4 connections); rank 2 NET/IB (4 connections)` on rank 1, and so round the ring): nothing
 crosses the ring. Rank 0's startup line: model 45.61 GiB a rank; 8 streams, 16,392 pages of 512 rows (49.87 GiB, eight
@@ -1596,4 +1596,4 @@ runs returned whole. The TP=4 band, greedy, against pair A's on the same harness
 Decode +46% at one stream, +48% at four, +55% at eight; prefill about the pair's (the ring's exchanges go round four
 hops). Available memory after the benches: spark1 12.2 GiB, spark2 14.0, spark3 11.9, spark4 14.2. Not measured yet:
 PREFILL_REDUCE=ring (the split prefill's rows passed along the ring; the engine's own neighbours-only mode) against
-gather, sampled decode at T=0.7, and a long soak. 0106 is in patches/engine (image daa6f2cde063 on all four Sparks).
+gather, sampled decode at T=0.7, and a long soak. 0106 is in patches/engine; the served image is 74e19a63a9a5 on all four Sparks (daa6f2cde063 is the same code under the earlier label).
