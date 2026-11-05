@@ -1,5 +1,18 @@
 # Changelog
 
+- **2026-11-05** -- the memory guard `start.sh` leaves running holds none of the caller's stdin, stdout or stderr: it
+  kept the pipe of `ssh spark './start.sh'` open, so that ssh session never returned after LIVE (issue 7, crystal8194).
+  Its one message now goes to `memguard.log` in the run directory (it went to the terminal and the log). A test,
+  `scripts/tests/memguard-detached.sh`, reads the guard's descriptors from /proc; `scripts/tests/run.sh` runs the
+  syntax check, shellcheck when installed, and the tests.
+- **2026-11-05** -- README: the prompt cache is funded from the remainder after the page pool and the streams' fixed
+  parts, so `PROMPT_CACHE_GIB` only caps it (eight streams at 1M leave under 1 GiB; `PARALLEL=4` funds 8 GiB), the
+  room differs by a few GiB between Sparks so the reserve that holds two windows is a per-pair check, hits land on the
+  4,096-row chunk grid, and nothing survives a restart at this pin (issue 3: jds1-ai, micachi; issue 7: crystal8194).
+  Video input: the template accepts `video_url` parts but the image ships no `libtfvideo.so`, so they return HTTP 500;
+  the settings table, the "What is checked" line and a troubleshooting row say so, with the out-of-image build that
+  works (issue 8, chai-md). Building the video runtime into the image is a Dockerfile change with an FFmpeg stage,
+  not taken here.
 - **2026-11-04** -- `WORKER_WEIGHTS=check` accepts a local checkpoint with no `.revision` marker when its config.json
   and shards are there, as `worker_weights_ready`'s comment always said; `MODEL_REVISION`'s default made the marker
   mandatory even for `MODEL_SOURCE=local` (issue 3, failure 1). The `E_WEIGHTS` hint names the marker.

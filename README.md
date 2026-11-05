@@ -49,7 +49,8 @@ The engine is TensorFold at commit `f350cd3e` ([ashhart/TensorFold](https://gith
 reaches the worker by content; link discovery finds both PCIe twins of the cabled port and the RoCE v2 GID that
 holds each port's own IPv4; NCCL and the engine's RDMA all-gather run over the cable; the full 1,048,576-token window
 serves 8 streams beside a 3.6 GiB prompt cache; greedy replies are byte-stable across every change
-([CHANGELOG.md](CHANGELOG.md)). Not checked: image input; `W8A8` is stashed on quality.
+([CHANGELOG.md](CHANGELOG.md)). Image input was checked by a user (issue 8: PNG, and four frames in order); video input is
+not in the image (see [Troubleshooting](#troubleshooting)). `W8A8` is stashed on quality.
 
 ## Performance
 
@@ -139,9 +140,21 @@ prompt's first token comes about 47% later than at `1`. Replies are byte-identic
 - **The page pool takes whole 1M windows before the prompt cache**, so a larger room can silently leave the cache at
   zero and every chat turn re-reads its history. The 9.5 GiB reserve holds the pool at two windows; after a start,
   rank 0's startup line must show `4098 pages`, `prompt cache: N GiB` and no `cannot keep one state` warning.
+- **The cache is funded from the remainder**, so `PROMPT_CACHE_GIB` only caps it: room after the reserve, minus the
+  pool, minus about 0.42 GiB of fixed state for each stream past the first (measured on issue 3). Eight streams at
+  the 1M window leave 0.7-0.9 GiB whatever the cap says; `PARALLEL=4` at the same window funds an 8 GiB cap, and a
+  190k-token prompt then resumes at 99%. The room itself differs by a few GiB between Sparks (DGX OS builds), so a
+  pair with more room than ours needs a larger reserve to stay at two windows, and one with less room gets a smaller
+  cache (1.2 GiB with 2.4 GiB less room, issue 7); the startup line is the check.
+- **What the cache keeps, at this pin** (issues 3 and 7): hits land on the 4,096-row prompt-chunk grid, so a
+  4,870-token prompt resumes 4,096 and up to 4,095 trailing tokens are prefilled again each turn (about 2.5 s); the
+  cache is device memory only, and nothing survives a restart (the CUDA GLM family refuses `--learn-conversations`
+  at `f350cd3e`). A 1.2 GiB cache kept one conversation up to 252k tokens but not 378k, and two of eight ~38k
+  conversations recalled newest first. For many long-lived agent sessions, size `PARALLEL` and `CONTEXT` for the
+  cache (see above) rather than for the stream count.
 - `HOST_CACHE_GIB=0` on GB10 (a pinned host tier takes the pool's own memory). The memory guard stops the pair in
-  order when a Spark stays under 2.5 GiB available. To free memory: lower `PARALLEL`, `DENSE`/`HEAD` bits or
-  `VISION=0`; raise `MEMORY_RESERVE_GIB` on out-of-memory errors.
+  order when a Spark stays under 2.5 GiB available, and logs that to `logs/current/memguard.log`. To free memory:
+  lower `PARALLEL`, `DENSE`/`HEAD` bits or `VISION=0`; raise `MEMORY_RESERVE_GIB` on out-of-memory errors.
 
 ## CONTEXT=auto
 
@@ -183,7 +196,7 @@ variables. **The served pair's `local.sh`** sets `PORT=8888`, `PARALLEL=8`, `CON
 | `KV`, `KV_PAGES` | `fp8`, `on` | `--kv-cache`, one shared pool of 512-row pages with `CONTEXT` as one request's cap |
 | `DENSE`, `HEAD` | `q8`, `q8` | `bf16`, `q8`, `q6` or `q4` for the dense linears and the LM head |
 | `MEMORY_RESERVE_GIB`, `HOST_CACHE_GIB`, `PROMPT_CACHE_GIB` | `12`, `0`, empty | See [Memory](#memory-on-a-128-gb-unified-spark); the pair runs the reserve at 9.5 |
-| `VISION`, `VISION_MAX_IMAGES`, `CHAT_TEMPLATE` | `1`, `50`, `auto` | Image input on rank 0's tower, with `templates/glm-5.3-flash-vision.jinja` |
+| `VISION`, `VISION_MAX_IMAGES`, `CHAT_TEMPLATE` | `1`, `50`, `auto` | Image input (`image_url` parts) on rank 0's tower, with `templates/glm-5.3-flash-vision.jinja`. The template also accepts `video_url` parts, but the image ships no `libtfvideo.so`, so a video request is refused with HTTP 500 (issue 8; see [Troubleshooting](#troubleshooting)); audio parts are unsupported |
 | `THINKING`, `REASONING_EFFORT`, `MAX_TOKENS`, `CLEAR_THINKING` | `0`, `high`, `32768`, `1` | Request defaults; earlier turns' reasoning is dropped from the prompt |
 | `ABSORB_MMA`, `W8A8` | `1`, `0` | Prompt numerics: `ABSORB_MMA` is free (+8.0%, identical answers); `W8A8` rounds activations and stays off |
 | `CE_EXCHANGE` | `0` | Needs CUDA IPC between ranks, which two Sparks do not have |
@@ -243,7 +256,9 @@ only ever stops containers labelled `tf.recipe=glm53-spark`.
 | `vendor_err 0x81` | A rail without a path to its partner was set by hand through `TF_ROCE_HCA` |
 | A long prompt dies in a RoCE gather | The gather has no wait setting at this pin; `ROCE=off` puts every exchange on NCCL |
 | `--parallel N needs … GiB`, `[memguard]` | The window or stream count does not fit, or a Spark went under the floor: lower `CONTEXT`/`PARALLEL` or raise `MEMORY_RESERVE_GIB` |
-| No prompt cache in the startup line | The page pool took a third window: raise `MEMORY_RESERVE_GIB` (see [Memory](#memory-on-a-128-gb-unified-spark)) |
+| No prompt cache in the startup line, `cannot keep one state` | The page pool took a third window: raise `MEMORY_RESERVE_GIB` (the engine's own hint to lower it is the wrong direction here; see [Memory](#memory-on-a-128-gb-unified-spark)) |
+| A prompt cache far under `PROMPT_CACHE_GIB` | The cap never binds: the cache is the remainder after the pool and the streams' fixed parts. Lower `PARALLEL` or `CONTEXT` (see [Memory](#memory-on-a-128-gb-unified-spark)) |
+| `libtfvideo.so is required for video inputs` (HTTP 500 on a `video_url` part) | The image builds no video runtime (`docker/Dockerfile` builds the `native` and `grammar` steps; `zig build video` needs a static FFmpeg). Build `libtfvideo.so` outside the image at the pin and add it at `/opt/tensorfold/native/lib/` in a derived image (issue 8 has the steps); a server that already refused one video request keeps refusing until restarted |
 | The first start takes long | Each rank hashes all 164 GiB once (cached in `CACHE_DIR`); raise `WAIT_TIMEOUT` |
 
 ## Ablit weights
