@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-11-05** -- engine patch 0107: `TF_TOOL_CALL_GUARD=1`, opt-in. A Hermes agent showed raw
+  `<tool_call>session_search<arg_key>…` text: its turn after two tool rounds was sent without `session_search`, and
+  the server (as vLLM) keeps a call to a tool the request does not offer as text. With the guard, such a request gets a
+  closing system note that tools are unavailable and the markup hidden (no tools, or `tool_choice: "none"`), or only
+  the unoffered call hidden (other tools offered); streamed or whole. Measured on a live serve with the patch: off,
+  every case replies as before and the greedy hashes are unchanged; on, no markup in 12 of 12 such replies (prose or
+  empty), calls to offered tools still parse (4 of 4), hashes and speed unchanged. README: the patch row and a
+  troubleshooting row.
 - **2026-11-05** -- the memory guard `start.sh` leaves running holds none of the caller's stdin, stdout or stderr: it
   kept the pipe of `ssh spark './start.sh'` open, so that ssh session never returned after LIVE (issue 7, crystal8194).
   Its one message now goes to `memguard.log` in the run directory (it went to the terminal and the log). A test,
