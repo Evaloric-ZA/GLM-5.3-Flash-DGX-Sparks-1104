@@ -237,6 +237,9 @@ start_memguard() {
     log "./stop.sh when one stays under ${MEMGUARD_FLOOR_GIB} GiB for ${MEMGUARD_HOLD_S} s."
     return 0
   fi
+  # The guard outlives start.sh, so it takes nothing of start.sh's: not the lock (fd 8), and not the caller's
+  # stdin, stdout or stderr. Holding them kept `ssh spark './start.sh'` from returning after LIVE (issue 7); its one
+  # message goes to memguard.log in the run directory.
   ( exec 8>&-                     # never hold start.sh's lock
     under_here=0; under_there=0; tick=0; there=''
     # The worker's figure is taken about every 10 s (it costs an ssh round trip); this Spark's at every tick.
@@ -256,14 +259,14 @@ start_memguard() {
       if (( under_here >= MEMGUARD_HOLD_S )) || (( under_there >= MEMGUARD_HOLD_S )); then
         who=$(hostname); low=$here
         (( under_there < MEMGUARD_HOLD_S )) || { who=$(worker_host); low=$there; }
-        printf '[memguard] %s: %s GiB available, under the %s GiB floor for %s s; stopping the server\n' \
-          "$who" "$low" "$MEMGUARD_FLOOR_GIB" "$MEMGUARD_HOLD_S" | tee -a "$RUN_LOG_DIR/memguard.log" >&2
-        MEMGUARD=0 "$REPO_ROOT/stop.sh" >> "$RUN_LOG_DIR/memguard.log" 2>&1 || true
+        printf '%s [memguard] %s: %s GiB available, under the %s GiB floor for %s s; stopping the server\n' \
+          "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$who" "$low" "$MEMGUARD_FLOOR_GIB" "$MEMGUARD_HOLD_S"
+        MEMGUARD=0 "$REPO_ROOT/stop.sh" 2>&1 || true
         exit 0
       fi
-    done ) &
+    done ) </dev/null >> "$RUN_LOG_DIR/memguard.log" 2>&1 &
   MEMGUARD_PID=$!
-  log "[I_MEMGUARD] Watching both Sparks: a stop below ${MEMGUARD_FLOOR_GIB} GiB held ${MEMGUARD_HOLD_S} s (pid $MEMGUARD_PID; MEMGUARD=0 turns it off)."
+  log "[I_MEMGUARD] Watching both Sparks: a stop below ${MEMGUARD_FLOOR_GIB} GiB held ${MEMGUARD_HOLD_S} s (pid $MEMGUARD_PID, its log $RUN_LOG_DIR/memguard.log; MEMGUARD=0 turns it off)."
 }
 stop_memguard() { [[ -z "${MEMGUARD_PID:-}" ]] || { kill "$MEMGUARD_PID" 2>/dev/null || true; wait "$MEMGUARD_PID" 2>/dev/null || true; }; }
 
