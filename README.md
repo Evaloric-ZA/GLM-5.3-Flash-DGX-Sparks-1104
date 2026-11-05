@@ -214,6 +214,52 @@ variables. **The served pair's `local.sh`** sets `PORT=8888`, `PARALLEL=8`, `CON
 | `WAIT_TIMEOUT`, `SMOKE_TIMEOUT`, `STOP_TIMEOUT` | `2400`, `180`, `45` | Seconds |
 | `DRY_RUN` | `0` | `1` prints the plan and changes nothing |
 
+## Hermes and other agents: the tool-call guard
+
+The server turns the `<tool_call>` markup GLM writes into OpenAI `tool_calls` only for tools the request offers, as
+vLLM does. Agents sometimes send a turn without the tool the model then calls, and that call reaches the agent as raw
+text. With [Hermes Agent](https://github.com/NousResearch/hermes-agent) it looks like this in the reply:
+
+```
+<tool_call>session_search<arg_key>after</arg_key><arg_value>7d</arg_value><arg_key>query</arg_key><arg_value>…</arg_value></tool_call>
+```
+
+It happens on a turn sent with no `tools`, with `tool_choice: "none"`, or with a tool list that lacks the called tool:
+typically the final-summary turn after the agent reaches its iteration limit, or a toolset that is switched off.
+Calls to offered tools are not affected, and parallel calls parse.
+
+**First, on the Hermes side:** raise its iteration limit if long tasks hit it, and keep the toolset that holds the tool
+(for `session_search`, session search) enabled for the agent you run.
+
+**Then, to keep the markup out of replies,** turn on the guard (engine patch 0107, off by default):
+
+```bash
+TF_TOOL_CALL_GUARD=1 ./start.sh restart
+```
+
+or, to keep it on for every start, add this line to `scripts/local.sh` (it must be exported to reach the ranks):
+
+```bash
+export TF_TOOL_CALL_GUARD=1
+```
+
+The first start after pulling this version builds the new image (the patch set changed). Check it took effect with
+`docker exec glm53-spark env | grep TF_TOOL_CALL_GUARD`.
+
+What it does, streamed or not:
+
+- A request that offers no tools (none sent, or `tool_choice: "none"`) whose history called tools gets a closing system
+  note that tools are unavailable for this reply, and any `<tool_call>` block the model writes anyway is removed. The
+  reply is then prose (the model answers from what it has) or empty (it only wanted to call).
+- A request that offers tools has calls to tools it did not offer, and malformed calls, removed; calls to offered tools
+  come back as `tool_calls` as before.
+- Each removal is logged: `docker logs glm53-spark 2>&1 | grep "tool-call guard"`.
+- Off (the default), every reply is byte-identical to a build without the patch. On, replies to ordinary requests are
+  unchanged too (same greedy hashes, same speed): the guard only acts on the requests above.
+
+Leave it off for a client that reads tool calls out of the reply text itself (tools described in its own system prompt,
+no `tools` field): the guard would remove the calls that client is waiting for.
+
 ## Engine patches
 
 `patches/engine/` holds 107 patches on TensorFold `f350cd3e`, applied in filename order at image build: 0001-0093 are
@@ -260,7 +306,7 @@ only ever stops containers labelled `tf.recipe=glm53-spark`.
 | No prompt cache in the startup line, `cannot keep one state` | The page pool took a third window: raise `MEMORY_RESERVE_GIB` (the engine's own hint to lower it is the wrong direction here; see [Memory](#memory-on-a-128-gb-unified-spark)) |
 | A prompt cache far under `PROMPT_CACHE_GIB` | The cap never binds: the cache is the remainder after the pool and the streams' fixed parts. Lower `PARALLEL` or `CONTEXT` (see [Memory](#memory-on-a-128-gb-unified-spark)) |
 | `libtfvideo.so is required for video inputs` (HTTP 500 on a `video_url` part) | The image builds no video runtime (`docker/Dockerfile` builds the `native` and `grammar` steps; `zig build video` needs a static FFmpeg). Build `libtfvideo.so` outside the image at the pin and add it at `/opt/tensorfold/native/lib/` in a derived image (issue 8 has the steps); a server that already refused one video request keeps refusing until restarted |
-| Raw `<tool_call>name<arg_key>…</arg_key><arg_value>…</arg_value></tool_call>` text in an agent's reply (Hermes and others) | The client sent that turn without the tool the model called: no `tools`, `tool_choice: "none"` (an agent's final-summary turn after its iteration limit, typically), or a list without that tool. The server only turns calls to offered tools into `tool_calls`. Fix the client (raise its iteration limit, enable the toolset), or start with `TF_TOOL_CALL_GUARD=1 ./start.sh` to hide the markup; the reply is then prose, or empty when the model only wanted to call |
+| Raw `<tool_call>name<arg_key>…</arg_key><arg_value>…</arg_value></tool_call>` text in an agent's reply (Hermes and others) | The client sent that turn without the tool the model called: no `tools`, `tool_choice: "none"` (an agent's final-summary turn after its iteration limit, typically), or a list without that tool. The server only turns calls to offered tools into `tool_calls`. Fix the client (raise its iteration limit, enable the toolset), or turn on the guard: [Hermes and other agents](#hermes-and-other-agents-the-tool-call-guard) |
 | The first start takes long | Each rank hashes all 164 GiB once (cached in `CACHE_DIR`); raise `WAIT_TIMEOUT` |
 
 ## Ablit weights
