@@ -161,7 +161,7 @@ variables. **The served pair's `local.sh`** sets `PORT=8888`, `PARALLEL=8`, `CON
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `WORKER` | **required** | The second Spark's ssh target on the direct link, e.g. `zurih@10.0.34.4` |
-| `TP` | `2` | Two Sparks with `./start.sh`; four cabled as a ring with `./start-tp4.sh` (below) |
+| `TP` | `2` | Two Sparks with `./start.sh` |
 | `FABRIC_PEER`, `FABRIC_SELF`, `NCCL_SOCKET_IFNAME`, `TF_ROCE_HCA`, `NCCL_IB_GID_INDEX` | auto | Found from the route to `WORKER`, the port's RDMA devices and its RoCE v2 GID table |
 | `NCCL_CHANNELS` | `4` | `NCCL_MIN_NCHANNELS` and `NCCL_MAX_NCHANNELS` |
 | `ROCE`, `ROCE_MAX_KB` | `on`, `4096` | The engine's one-shot RDMA all-gathers, and the largest shard they carry; `off` puts everything on NCCL |
@@ -224,56 +224,6 @@ the [RTX PRO 6000 recipe](https://github.com/MiaAI-Lab/GLM-5.3-Flash-2x-RTX-PRO-
 | 0105 | An untyped tool parameter takes the JSON object or array the model wrote; text stays text (sibling recipe issue #180) |
 
 Every default-on patch was A/B tested against the image before it: greedy replies identical plus a measured gain.
-
-## 4 Sparks (TP=4 on a ring, experimental)
-
-`./start-tp4.sh` runs the same image and settings as tensor parallel over four Sparks cabled to each other without a
-switch: each Spark's two ConnectX-7 ports to its two neighbours, one subnet per cable (a port and its PCIe twin on it),
-the two Sparks across the ring from each other reachable only through a neighbour (an address routed over the cables,
-or the LAN). Rank 0 is this Spark (the API); `WORKER`, `WORKER2` and `WORKER3` are the other three **in the ring's
-order** from here (`WORKER` and `WORKER3` cabled to this Spark, `WORKER2` across). `./stop-tp4.sh` stops the four.
-`DRY_RUN=1 ./start-tp4.sh` prints the ring it finds and every rank's command, and changes nothing.
-
-What differs from the pair (`scripts/tp4.sh`):
-
-- **The ring.** Each Spark's RoCE addresses are read over ssh and paired by subnet; the launcher refuses a switch, a
-  ring that is not in `WORKER` order, or a missing cable. NCCL gets `NCCL_ALGO=Ring` and a graph file per rank whose
-  channels sit on the devices toward the previous rank, with subnet-aware routing (`NCCL_IB_SUBNET_AWARE_ROUTING=1`,
-  `NCCL_IB_SUBNET_PREFIX_LEN` set so a port and its twin both carry traffic) moving each send onto the next rank's
-  cable; NIC fusion, P2P and SHM transports are off. NCCL connects channels at first use
-  (`NCCL_RUNTIME_CONNECT=1`): its tree for four ranks joins rank 0 to rank 2, which no cable reaches, so connecting
-  everything at init, as the engine asks by default, times out in `ibv_modify_qp`. The engine's own exchanges run as
-  all-gathers between neighbours (`PREFILL_REDUCE=gather`; `ring` passes the split prefill's rows along the ring and
-  is the next thing to measure); the two-rank RoCE path does not apply and `ROCE` is off. Engine patch 0106 makes the
-  start's peer warm-up follow that mode instead of posting to every rank.
-- **Bootstrap.** `NCCL_COMM_ID` and the ranks' watch lines go to `MASTER_ADDR` (what this Spark's name resolves to; an
-  address every worker reaches, through a neighbour for the Spark across); NCCL's bootstrap socket on each Spark's
-  default-route netdev (`SOCKET_IFNAME`).
-- **Weights.** Rank 0 reads its own `MODEL_DIR`; the workers mount it over NFS from this Spark's address on each
-  worker's route (`WORKER_WEIGHTS=nfs`, the default here; `check` for workers with their own copy). When the NFS
-  server exports another view of the path (a container exporting `/huggingface` for `~/.cache/huggingface`), set
-  `NFS_MODEL_PATH` and `NFS_DFLASH2_PATH` to the exported paths; `NFS_SERVER1..3` override the per-worker address.
-  Every rank still reads every shard: three workers over NFS makes the first load slower than the pair's.
-- **Memory.** Each rank holds a quarter of the routed experts, the KV pool is replicated on every rank, so the page
-  planner has far more room: eight 1M-token windows and a prompt cache usually fit at the recipe's default reserve.
-  Read rank 0's startup line after every start (the pages, the prompt cache, no "cannot keep one state").
-
-Measured 2026-11-04 on this kit (spark1 rank 0, image `74e19a63a9a5`, 8 streams, 1M window, FP8 KV on pages, q8
-dense and head, DFlash2; greedy, the same harness as the pair's numbers under [Performance](#performance)):
-
-| | two Sparks (TP=2) | four Sparks (TP=4, a ring) |
-| --- | ---: | ---: |
-| 1 stream, prose / code | 38.4 / 56.6 tok/s | 56.1 / 85.0 tok/s |
-| 4 streams, prose, total | 79-81 tok/s | 115-120 tok/s |
-| 8 streams, prose, total | 105-106 tok/s | 163-166 tok/s |
-| prefill 16K / 64K | ~1,600-1,800 tok/s | 1,752 / 1,889 tok/s |
-| KV pool | 4,098 pages (2.1M tokens) | 16,392 pages (8.4M tokens), 3.6 GiB prompt cache |
-
-Rank 0 loads 45.6 GiB; each rank's NCCL connects only to its two neighbours. Greedy replies are repeatable run to
-run and the same with drafts off; they are not the pair's tokens (a different partition rounds differently).
-
-Settings beside the pair's: `WORKER2`, `WORKER3`, `MASTER_ADDR`, `SOCKET_IFNAME`, `PREFILL_REDUCE` (`gather`),
-`RING_NCCL_ALGO` (`Ring`), `NFS_MODEL_PATH`, `NFS_DFLASH2_PATH`, `NFS_SERVER1..3`. Logs: `logs/current/rank0..3.log`.
 
 ## Logs and stopping
 

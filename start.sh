@@ -286,8 +286,8 @@ launch() {
   build_env_args
   [[ -z "$CONTAINER_USER" ]] || user_args=(--user "$CONTAINER_USER")
   worker_user_args=("${user_args[@]}")
-  # The worker's own login when CONTAINER_USER is this Spark's (the default, or set to the same value), as scripts/tp4.sh
-  # does: the two logins can have different ids, and rank 1 writes to a state folder its own login owns. Root or another
+  # The worker's own login when CONTAINER_USER is this Spark's (the default, or set to the same value): the two logins
+  # can have different ids, and rank 1 writes to a state folder its own login owns. Root or another
   # UID:GID crosses as given.
   if [[ "$CONTAINER_USER" == "$(id -u):$(id -g)" ]]; then
     worker_ug=$(wssh sh -c 'printf "%s:%s\n" "$(id -u)" "$(id -g)"') && [[ "$worker_ug" =~ ^[0-9]+:[0-9]+$ ]] \

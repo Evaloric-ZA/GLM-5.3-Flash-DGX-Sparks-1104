@@ -6,11 +6,11 @@
 - **2026-11-04** -- the worker's state paths (`WORKER_CACHE_DIR` and the state and overlay built on it) default under
   the worker's own home when its login differs from this Spark's and every default is untouched; an explicitly set
   path wins as before (issue 3, failure 2). The `E_START` failure to create the directory says what to set.
-- **2026-11-04** -- `start.sh` runs rank 1 as the worker's own login when `CONTAINER_USER` is this Spark's (the default), as
-  `scripts/tp4.sh` already does. With different ids on the two Sparks (uid 1000 and 1001 on ours), rank 1 could not write
+- **2026-11-04** -- `start.sh` runs rank 1 as the worker's own login when `CONTAINER_USER` is this Spark's (the default).
+  With different ids on the two Sparks (uid 1000 and 1001 on ours), rank 1 could not write
   to its state folder and stopped at `hashing the checkpoint failed at model-00001-of-00083.safetensors` with
   `AccessDenied`. Equal ids, root and another `CONTAINER_USER` run as before; a `CONTAINER_USER` set to this Spark's own ids
-  counts as the default, as in `tp4.sh`. With different ids the start stops, with the fix, when a folder in rank 1's `HOME`
+  counts as the default. With different ids the start stops, with the fix, when a folder in rank 1's `HOME`
   (`WORKER_CACHE_DIR/home`) is not writable by that login, which a workaround that let an earlier rank write there can leave
   behind. A worker reading shards only the head's id can read (mode 0600 over NFS without `all_squash`) now needs shards its
   login can read.
@@ -32,17 +32,6 @@
   recipe's four serving scripts do pass through Aevonix's rework (the 2x RTX PRO 6000 recipe adopted it - their texts are the
   closest matches to ours), so Aevonix stays credited for the intermediate rework and the K12 loop, as the reworker of the
   lab's scripts rather than their origin.
-- **2026-11-04** -- `./start-tp4.sh` and `./stop-tp4.sh`: the recipe over four DGX Sparks cabled as a ring without a
-  switch (README "4 Sparks"). The ring is found from the Sparks' ConnectX-7 addresses; NCCL runs ring-only with a graph
-  file per rank and subnet-aware routing, connected at first use (the engine's connect-everything-at-init would join
-  rank 0 to the Spark across the ring, where the first boot timed out); the engine's prefill exchanges run as all-gathers
-  between neighbours; the workers read the head's checkpoint over NFS. Engine patch `0106`: the start's peer warm-up
-  follows `TF_GLM_PREFILL_REDUCE` (split: every peer; ring: next and previous; gather: none) instead of sending to every
-  rank. NCCL connects at first use (`NCCL_RUNTIME_CONNECT=1`) and bootstraps on the head's LAN address, so neither
-  NCCL's tree nor the engine's follower start-up reaches the Spark across the ring. Measured on this kit (greedy, the
-  recipe's harness): 56 / 85 tok/s prose / code at one stream against the pair's 38 / 57, 115-120 at four streams
-  against 79-81, 163-166 at eight against 105-106, prefill 1,750-1,890 tok/s, eight 1M windows and a 3.6 GiB prompt
-  cache a rank. The two-Spark `./start.sh` is unchanged. Details: docs/speed/RESULTS.md, "TP=4 on the four-Spark ring".
 - **2026-11-04** -- Upstream TensorFold since this recipe's pin (`f350cd3e`, 1,059 commits behind main) was reviewed for
   fixes worth carrying (docs/speed/RESULTS.md, "Upstream since the pin"). The one that applied cleanly, the lane fix
   `ed39acc5a` (a stream finishing on its first token released its lane only after its trace), was built as `0106` and
