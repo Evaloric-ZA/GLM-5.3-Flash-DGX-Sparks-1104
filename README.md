@@ -17,6 +17,10 @@
 > and 93 of its patches unchanged, plus a two-Spark launch over the ConnectX-7 link, unified-memory budgeting and twelve
 > GB10 patches, every default measured on the pair. Different engine lineage, different patch stack, different numbers.
 
+**Engine: TensorFold 1.1.9** (`tensorfold-native --version`), upstream commit
+[`f350cd3e`](https://github.com/ashhart/TensorFold/commit/f350cd3ea253a042e205746928271f9d8f71a82d) plus this recipe's
+108 engine patches (`patches/engine/`).
+
 This recipe serves GLM-5.3-Flash from an EXL3 checkpoint on **two NVIDIA DGX Sparks** (GB10, 128 GB unified memory
 each) at tensor parallel 2, one rank on each Spark, over their ConnectX-7 link. It uses TensorFold's native Zig/CUDA
 server (`tensorfold-native`) built in Docker for `sm_121`. The default checkpoint is the pinned 4 bpw EXL3 quant,
@@ -29,7 +33,7 @@ pages, 12.5 GiB on each rank). Rank 0 serves the OpenAI-compatible API; rank 1 f
 DRY_RUN=1 ./start.sh  # print the whole plan: the link it finds, the docker build, both ranks' command lines, the health wait
 ```
 
-The engine is TensorFold at commit `f350cd3e` ([ashhart/TensorFold](https://github.com/ashhart/TensorFold)), plus the
+The engine is TensorFold 1.1.9 at commit `f350cd3e` ([ashhart/TensorFold](https://github.com/ashhart/TensorFold)), plus the
 `patches/engine/*.patch` files, compiled with Zig 0.17.0 for `sm_121` by `docker/Dockerfile`.
 
 
@@ -45,7 +49,7 @@ The engine is TensorFold at commit `f350cd3e` ([ashhart/TensorFold](https://gith
 
 ## What is checked
 
-105 patches apply to `f350cd3e` with no rejects; the image builds on aarch64 for `sm_121` (about 6 minutes) and
+108 patches apply to `f350cd3e` with no rejects; the image builds on aarch64 for `sm_121` (about 6 minutes) and
 reaches the worker by content; link discovery finds both PCIe twins of the cabled port and the RoCE v2 GID that
 holds each port's own IPv4; NCCL and the engine's RDMA all-gather run over the cable; the full 1,048,576-token window
 serves 8 streams beside a 3.6 GiB prompt cache; greedy replies are byte-stable across every change
