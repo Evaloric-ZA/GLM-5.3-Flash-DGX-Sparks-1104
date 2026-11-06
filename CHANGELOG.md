@@ -1,5 +1,15 @@
 # Changelog
 
+- **2026-11-06** -- README: a measured setting for long agent sessions, `PARALLEL=2 CONTEXT=524288
+  PROMPT_CACHE_GIB=32`. On the pair, a 382k-token conversation, then eight unique ~31k ones, then the long one's next
+  turn: with this setting rank 0 funds a 12.4 GiB cache, the long turn resumes 100% cached (0.8 s instead of 237 s)
+  and all eight short ones resume at 94%, with decode and greedy hashes unchanged. The served `PARALLEL=8` (3.4 GiB)
+  resumes 1 of 8 and not the long one; `PARALLEL=4 PROMPT_CACHE_GIB=16`, with or without `CONTEXT=524288`
+  (5.1-5.4 GiB), resumes 3-4 of 8 and not the long one. The trade is two streams at once; there is still no disk or
+  host tier on GB10. Measured alongside, with no change taken: tool-eval-bench 2.8.0 `--hardmode`, 3 seeds, scores 88
+  thinking off and 93 thinking on (reasoning high). A build with 2,048-row prompt chunks (without 0094/0095) has the
+  same hashes and a shorter worst pause beside a long prefill (1.6 s against 2.7 s), but p95 pauses 10 times longer
+  and three concurrent agent loops 3.6 times slower, so 4,096 rows stay.
 - **2026-11-05** -- engine patch 0107: `TF_TOOL_CALL_GUARD=1`, opt-in. A Hermes agent showed raw
   `<tool_call>session_search<arg_key>…` text: its turn after two tool rounds was sent without `session_search`, and
   the server (as vLLM) keeps a call to a tool the request does not offer as text. With the guard, such a request gets a
