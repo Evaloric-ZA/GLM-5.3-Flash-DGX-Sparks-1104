@@ -26,6 +26,13 @@
   after a restart in 1.8 s (cold 58.4 s); every reply equal to the in-memory resume. Damaged state or block files are
   refused and the turn prefills. Writing a state costs a stream decoding beside it about 1%. Host tests: the disk image
   round trip on a device-only lease and on one that runs onto 0015's host pages.
+- **2026-11-07** -- `PROMPT_CACHE_MIN_GIB`, opt-in (empty by default): `start.sh` reads the prompt cache each rank's
+  startup line funds and, before LIVE, stops both ranks with `E_CACHE` when one funds less. `PROMPT_CACHE_GIB` caps
+  the cache but does not guarantee it, even with `CACHE_FIRST=1`: the cache is what that start's room leaves after the
+  streams' windows, and the room moved between 17.8 and 18.9 GiB across starts with no config change (issue 16,
+  jds1-ai). "no prompt cache" and a cache in host memory count as 0 on the device; a rank 0 log with no startup line
+  stops the start; a rank 1 log without one warns (`W_CACHE_MIN`) and checks rank 0 only. Test:
+  `scripts/tests/cache-min.sh` (startup lines in the engine's formats, ranks stubbed), run by `scripts/tests/run.sh`.
 - **2026-11-06** -- engine patch 0108: `CACHE_FIRST=1` (`TF_PROMPT_CACHE_FIRST`), opt-in. The pool counted the room in
   whole windows before the prompt cache, so `PROMPT_CACHE_GIB` only capped the remainder (issue 7: crystal8194,
   tanchunsiong, unitea1992; issue 3). With it, the cache is set aside first and the streams share the pages left, one

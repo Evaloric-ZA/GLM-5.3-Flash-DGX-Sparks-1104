@@ -409,6 +409,42 @@ show_failure() {
   done
 }
 
+# The device prompt cache a rank's startup line ("… N streams at once, …, a 9.7 GiB prompt cache; …") funds, in GiB:
+# 0 for "no prompt cache" or a cache in host memory, empty when the log has no startup line.
+funded_cache_gib() {
+  local line
+  line=$(grep -h 'streams at once' "$1" 2>/dev/null | tail -1) || true
+  [[ -n "$line" ]] || return 0
+  if [[ "$line" != *"GiB prompt cache in host memory"* && "$line" =~ ,\ a\ ([0-9][0-9.]*)\ GiB\ prompt\ cache ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+  else
+    printf '0\n'
+  fi
+}
+# PROMPT_CACHE_MIN_GIB: both ranks stop before LIVE when a startup line funds less (the cap is not a floor, issue 16).
+check_cache_min() {
+  [[ -n "$PROMPT_CACHE_MIN_GIB" ]] || return 0
+  local r f got
+  collect_logs
+  for r in 0 1; do
+    f="$RUN_LOG_DIR/rank$r.log"
+    got=$(funded_cache_gib "$f")
+    if [[ -z "$got" ]]; then
+      if (( r == 0 )); then
+        stop_both
+        fail E_CACHE "PROMPT_CACHE_MIN_GIB=$PROMPT_CACHE_MIN_GIB: rank 0's log has no startup line (\"streams at once\"), so the start cannot be checked; both ranks are stopped. See $f."
+      fi
+      warn W_CACHE_MIN "Rank $r's log has no startup line (\"streams at once\"); PROMPT_CACHE_MIN_GIB checked rank 0 only. See $f."
+      continue
+    fi
+    if ! at_least "$got" "$PROMPT_CACHE_MIN_GIB"; then
+      stop_both
+      fail E_CACHE "Rank $r funds a $got GiB prompt cache, under PROMPT_CACHE_MIN_GIB=$PROMPT_CACHE_MIN_GIB; both ranks are stopped. The cache is what the room leaves, capped by PROMPT_CACHE_GIB: lower PARALLEL or CONTEXT, or with CACHE_FIRST=1 try a larger PROMPT_CACHE_GIB (it can cost the streams a whole window). See $f."
+    fi
+    log "Prompt cache: rank $r funds $got GiB (PROMPT_CACHE_MIN_GIB=$PROMPT_CACHE_MIN_GIB)."
+  done
+}
+
 live_message() {
   brand_style
   printf '%sGLM-5.3-Flash-EXL3 is now LIVE! on port %s%s\n%sEndpoint: %s/v1%s\n' \
@@ -569,6 +605,7 @@ if [[ "$DRY_RUN" != 1 ]] && ! wait_ready; then
     wait_ready && break
   done
 fi
+[[ "$DRY_RUN" == 1 ]] || check_cache_min
 start_memguard
 finish_start
 if [[ "$DRY_RUN" != 1 ]]; then
