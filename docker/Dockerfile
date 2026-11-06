@@ -149,6 +149,26 @@ RUN shopt -s nullglob \
  && cat "${PREFIX}/BUILD-INFO"
 
 # ---------------------------------------------------------------------------------------------------------------------
+# Video input (WITH_VIDEO=1, off by default): libtfvideo.so, upstream's `zig build video` over the static FFmpeg 9.0.2
+# that tools/zig/build_ffmpeg.sh makes (LGPL build: h264/hevc/vp8/vp9/mpeg4 decoders, mov/matroska demuxers), installed
+# in lib/ beside the server, where --vision finds it on the first video_url request. Off, this stage is an empty
+# directory and the image is the same as without it.
+FROM build AS video
+ARG WITH_VIDEO=0
+ARG ZIG_CPU=native
+RUN --mount=type=cache,id=tensorfold-zig-global,target=/root/.cache/zig \
+    mkdir -p /video \
+ && if [[ "${WITH_VIDEO}" == 1 ]]; then \
+      apt-get update && apt-get install -y --no-install-recommends make perl && rm -rf /var/lib/apt/lists/* \
+      && bash tools/zig/build_ffmpeg.sh /ffmpeg \
+      && zig build video -Dffmpeg=/ffmpeg --prefix /video -Doptimize=fast -Dcpu="${ZIG_CPU}" --summary failures \
+      && test -f /video/native/lib/libtfvideo.so \
+      && mkdir -p /video/LICENSES \
+      && cp /ffmpeg/src/ffmpeg-*/COPYING.LGPLv2.1 /video/LICENSES/ffmpeg-COPYING.LGPLv2.1 \
+      && ls -l /video/native/lib; \
+    fi
+
+# ---------------------------------------------------------------------------------------------------------------------
 # NCCL: the CUDA runtime image carries libnccl.so.2, and the engine needs 2.30.0 or newer. When the base image's copy
 # is older (or missing), NCCL_WHEEL=<version> installs that nvidia-nccl-cu13 wheel's library instead.
 FROM toolchain AS nccl
@@ -185,6 +205,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=nccl /opt/nccl/ /opt/nccl/
 COPY --from=build ${PREFIX}/ ${PREFIX}/
+COPY --from=video /video/ ${PREFIX}/
 # A wheel's libnccl replaces the base image's; then check that whatever is installed meets the engine's minimum.
 RUN shopt -s nullglob \
  && if [[ -f /opt/nccl/libnccl.so.2 ]]; then \

@@ -70,6 +70,10 @@ validate_config() {
   done
   [[ "$WORKER_WEIGHTS" =~ ^(rsync|nfs|check)$ ]] || fail E_CONFIG 'WORKER_WEIGHTS must be rsync, nfs or check.'
   [[ -z "$PROMPT_CACHE_GIB" ]] || is_number "$PROMPT_CACHE_GIB" || fail E_CONFIG 'PROMPT_CACHE_GIB must be empty or a number of GiB (0: none).'
+  [[ "$CACHE_FIRST" =~ ^[01]$ ]] || fail E_CONFIG 'CACHE_FIRST must be 0 or 1.'
+  [[ "$CACHE_FIRST" == 0 ]] || { [[ -n "$PROMPT_CACHE_GIB" ]] && at_least "$PROMPT_CACHE_GIB" 1; } \
+    || fail E_CONFIG 'CACHE_FIRST=1 sets PROMPT_CACHE_GIB aside first: set PROMPT_CACHE_GIB to the GiB to keep (1 or more).'
+  [[ "$WITH_VIDEO" =~ ^[01]$ ]] || fail E_CONFIG 'WITH_VIDEO must be 0 or 1.'
   [[ "$CONFIG_OVERLAY" =~ ^(auto|0)$ ]] || fail E_CONFIG 'CONFIG_OVERLAY must be auto or 0.'
   [[ "$TP" == 2 ]] || fail E_CONFIG "TP=$TP: ./start.sh wires two Sparks."
   [[ -n "$WORKER" ]] || fail E_CONFIG 'WORKER is empty: set it to the second Spark'"'"'s ssh target (e.g. WORKER=zurih@10.0.34.4) in scripts/local.sh.'
@@ -122,6 +126,7 @@ set_image() {
   PATCHES_HASH=$({
     printf 'TF_REPO=%s\nTF_REF=%s\nZIG_VERSION=%s\nZIG_SHA256=%s\nSM=%s\nZIG_CPU=%s\nNCCL_WHEEL=%s\n' "$TF_REPO" "$TF_REF" "$ZIG_VERSION" "$ZIG_SHA256" "$SM" "$ZIG_CPU" "$NCCL_WHEEL"
     for f in "${IMAGE_FILES[@]}"; do [[ -n "$f" ]] || continue; printf '\0%s\0' "$f"; cat -- "$REPO_ROOT/$f"; done
+    [[ "$WITH_VIDEO" != 1 ]] || printf '\0WITH_VIDEO=1\0'  # its own tag; the default's hash is as it was
   } | sha256sum | cut -c1-12)
   IMAGE=${IMAGE:-$IMAGE_REPO:$PATCHES_HASH}
 }
@@ -308,7 +313,7 @@ prepare_image() {
   run docker build -f "$REPO_ROOT/docker/Dockerfile" -t "$IMAGE" --label "tf.patches=$PATCHES_HASH" \
     --build-arg "TF_REPO=$TF_REPO" --build-arg "TF_REF=$TF_REF" --build-arg "ZIG_VERSION=$ZIG_VERSION" \
     --build-arg "ZIG_SHA256=$ZIG_SHA256" --build-arg "SM=$SM" --build-arg "PATCHES_HASH=$PATCHES_HASH" \
-    --build-arg "ZIG_CPU=$ZIG_CPU" ${NCCL_WHEEL:+--build-arg "NCCL_WHEEL=$NCCL_WHEEL"} \
+    --build-arg "ZIG_CPU=$ZIG_CPU" ${NCCL_WHEEL:+--build-arg "NCCL_WHEEL=$NCCL_WHEEL"} --build-arg "WITH_VIDEO=$WITH_VIDEO" \
     "${build_flags[@]}" "$REPO_ROOT" || fail E_IMAGE 'Image build failed. Check disk space, network access and the first build error.'
   run docker run --rm --network none --entrypoint "$TF_BIN" "$IMAGE" --version \
     || fail E_IMAGE "The built image has no working $TF_BIN."

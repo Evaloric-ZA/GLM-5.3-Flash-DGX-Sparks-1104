@@ -49,8 +49,8 @@ The engine is TensorFold at commit `f350cd3e` ([ashhart/TensorFold](https://gith
 reaches the worker by content; link discovery finds both PCIe twins of the cabled port and the RoCE v2 GID that
 holds each port's own IPv4; NCCL and the engine's RDMA all-gather run over the cable; the full 1,048,576-token window
 serves 8 streams beside a 3.6 GiB prompt cache; greedy replies are byte-stable across every change
-([CHANGELOG.md](CHANGELOG.md)). Image input was checked by a user (issue 8: PNG, and four frames in order); video input is
-not in the image (see [Troubleshooting](#troubleshooting)). `W8A8` is stashed on quality.
+([CHANGELOG.md](CHANGELOG.md)). Image input was checked by a user (issue 8: PNG, and four frames in order); video input
+needs the `WITH_VIDEO=1` image (checked here: a three-colour clip described in order). `W8A8` is stashed on quality.
 
 ## Performance
 
@@ -152,13 +152,16 @@ prompt's first token comes about 47% later than at `1`. Replies are byte-identic
   at `f350cd3e`). A 1.2 GiB cache kept one conversation up to 252k tokens but not 378k, and two of eight ~38k
   conversations recalled newest first. For many long-lived agent sessions, size `PARALLEL` and `CONTEXT` for the
   cache (see above) rather than for the stream count.
-- **Long agent sessions (one 400k conversation beside others): `PARALLEL=2 CONTEXT=524288 PROMPT_CACHE_GIB=32`.**
-  Measured on the pair (2026-11-06): a 382k-token conversation, then eight unique ~31k ones, then the 382k one's
-  next turn, then the eight recalled newest first. Rank 0 funds a 12.4 GiB cache. The 382k turn resumes 100%
-  cached (0.8 s instead of 237 s), and all eight short ones resume at 94%. Decode and reply hashes are unchanged.
-  The served `PARALLEL=8` (3.4 GiB cache) resumes 1 of 8 and not the long one. `PARALLEL=4 PROMPT_CACHE_GIB=16`,
-  with or without `CONTEXT=524288` (5.1-5.4 GiB), resumes 3-4 of 8 and not the long one. The trade is two streams
-  at once. There is no disk or host tier yet, so a session larger than the cache is prefilled again in full.
+- **Long agent sessions: `CACHE_FIRST=1 PROMPT_CACHE_GIB=12`** (engine patch 0108). The cache is set aside before
+  the room is counted in whole windows, so the eight streams share one 1M window of pages (2,056 pages, any request
+  still up to 1,048,576 tokens) and the cache gets the rest. Measured on the pair (2026-11-06) at the served
+  `PARALLEL=8` and 1M window: rank 0 funds a 9.3-9.7 GiB cache (the startup log says when the room funds less than
+  `PROMPT_CACHE_GIB` asks); a 380k-token conversation, then eight unique ~31k ones, then the long one's next turn
+  resumes 99% cached (3.0 s instead of 234 s), and all eight short ones resume. Decode and reply hashes are unchanged,
+  and three concurrent agent loops ran as fast as without it. Without it, the served config resumes 1 of 8 and not the
+  long one. The trade: the streams together hold one window's tokens at a time instead of two, so a second
+  request past ~1M tokens of live context waits. `PARALLEL=2 CONTEXT=524288 PROMPT_CACHE_GIB=32` also keeps them
+  (12.4 GiB), at two streams. There is no disk tier yet, so nothing survives a restart.
 - `HOST_CACHE_GIB=0` on GB10 (a pinned host tier takes the pool's own memory). The memory guard stops the pair in
   order when a Spark stays under 2.5 GiB available, and logs that to `logs/current/memguard.log`. To free memory:
   lower `PARALLEL`, `DENSE`/`HEAD` bits or `VISION=0`; raise `MEMORY_RESERVE_GIB` on out-of-memory errors.
@@ -203,7 +206,9 @@ variables. **The served pair's `local.sh`** sets `PORT=8888`, `PARALLEL=8`, `CON
 | `KV`, `KV_PAGES` | `fp8`, `on` | `--kv-cache`, one shared pool of 512-row pages with `CONTEXT` as one request's cap |
 | `DENSE`, `HEAD` | `q8`, `q8` | `bf16`, `q8`, `q6` or `q4` for the dense linears and the LM head |
 | `MEMORY_RESERVE_GIB`, `HOST_CACHE_GIB`, `PROMPT_CACHE_GIB` | `12`, `0`, empty | See [Memory](#memory-on-a-128-gb-unified-spark); the pair runs the reserve at 9.5 |
-| `VISION`, `VISION_MAX_IMAGES`, `CHAT_TEMPLATE` | `1`, `50`, `auto` | Image input (`image_url` parts) on rank 0's tower, with `templates/glm-5.3-flash-vision.jinja`. The template also accepts `video_url` parts, but the image ships no `libtfvideo.so`, so a video request is refused with HTTP 500 (issue 8; see [Troubleshooting](#troubleshooting)); audio parts are unsupported |
+| `CACHE_FIRST` | `0` | `1` sets `PROMPT_CACHE_GIB` (required) aside before the streams' windows (`TF_PROMPT_CACHE_FIRST`, patch 0108), so the cap becomes the cache; see [Memory](#memory-on-a-128-gb-unified-spark) |
+| `WITH_VIDEO` | `0` | `1` builds `libtfvideo.so` (FFmpeg 9.0.2, static, LGPL; h264/hevc/vp8/vp9/mpeg4 in mp4/mkv) into its own image tag, so `VISION=1` serves `video_url` parts; a few minutes more at build |
+| `VISION`, `VISION_MAX_IMAGES`, `CHAT_TEMPLATE` | `1`, `50`, `auto` | Image input (`image_url` parts) on rank 0's tower, with `templates/glm-5.3-flash-vision.jinja`. `video_url` parts too with `WITH_VIDEO=1` (otherwise HTTP 500, issue 8); audio parts are unsupported and an mp4's audio track is ignored |
 | `THINKING`, `REASONING_EFFORT`, `MAX_TOKENS`, `CLEAR_THINKING` | `0`, `high`, `32768`, `1` | Request defaults; earlier turns' reasoning is dropped from the prompt |
 | `ABSORB_MMA`, `W8A8` | `1`, `0` | Prompt numerics: `ABSORB_MMA` is free (+8.0%, identical answers); `W8A8` rounds activations and stays off |
 | `CE_EXCHANGE` | `0` | Needs CUDA IPC between ranks, which two Sparks do not have |
@@ -269,9 +274,9 @@ no `tools` field): the guard would remove the calls that client is waiting for.
 
 ## Engine patches
 
-`patches/engine/` holds 107 patches on TensorFold `f350cd3e`, applied in filename order at image build: 0001-0093 are
+`patches/engine/` holds 108 patches on TensorFold `f350cd3e`, applied in filename order at image build: 0001-0093 are
 the [RTX PRO 6000 recipe](https://github.com/MiaAI-Lab/GLM-5.3-Flash-2x-RTX-PRO-6000-TensorFold)'s, unchanged;
-0094-0107 are this pair's own or ported from that recipe. None is GB10-specific: the arch-gated kernels test
+0094-0108 are this pair's own or ported from that recipe. None is GB10-specific: the arch-gated kernels test
 `__CUDA_ARCH__ >= 1200`, which `sm_121` satisfies.
 
 | Patches | What they do |
@@ -289,6 +294,7 @@ the [RTX PRO 6000 recipe](https://github.com/MiaAI-Lab/GLM-5.3-Flash-2x-RTX-PRO-
 | 0103–0104 | From the RTX recipe: a tool call after prose that quotes a tool-call opener is the call (with a guard so a call quoted inside a call's value is never invoked); GLM warm turns, so a user message after an agent loop resumes past the loop (8,192 of 9.3K tokens cached, was 4,096) |
 | 0105 | An untyped tool parameter takes the JSON object or array the model wrote; text stays text (sibling recipe issue #180) |
 | 0107 | `TF_TOOL_CALL_GUARD=1` (opt-in, off by default): tool-call markup never reaches the client as text. A request that offers no tools (none sent, or `tool_choice: "none"`) although its history called them gets a closing system note that tools are unavailable, and any `<tool_call>` the model writes anyway is hidden; a request that offers tools has calls to tools it did not offer, and malformed calls, hidden. Streamed or whole; each hide is logged (`tool-call guard:`). Off: replies byte-identical |
+| 0108 | `TF_PROMPT_CACHE_FIRST=1` (`CACHE_FIRST=1`, opt-in): the prompt cache is set aside before the room is counted in whole windows; off, the plan is as before. The startup log says when the room funds less cache than `--prompt-cache-gib` asks, and what frees more |
 
 Every default-on patch was A/B tested against the image before it: greedy replies identical plus a measured gain.
 
@@ -311,8 +317,9 @@ only ever stops containers labelled `tf.recipe=glm53-spark`.
 | A long prompt dies in a RoCE gather | The gather has no wait setting at this pin; `ROCE=off` puts every exchange on NCCL |
 | `--parallel N needs … GiB`, `[memguard]` | The window or stream count does not fit, or a Spark went under the floor: lower `CONTEXT`/`PARALLEL` or raise `MEMORY_RESERVE_GIB` |
 | No prompt cache in the startup line, `cannot keep one state` | The page pool took a third window: raise `MEMORY_RESERVE_GIB` (the engine's own hint to lower it is the wrong direction here; see [Memory](#memory-on-a-128-gb-unified-spark)) |
-| A prompt cache far under `PROMPT_CACHE_GIB` | The cap never binds: the cache is the remainder after the pool and the streams' fixed parts. Lower `PARALLEL` or `CONTEXT` (see [Memory](#memory-on-a-128-gb-unified-spark)) |
-| `libtfvideo.so is required for video inputs` (HTTP 500 on a `video_url` part) | The image builds no video runtime (`docker/Dockerfile` builds the `native` and `grammar` steps; `zig build video` needs a static FFmpeg). Build `libtfvideo.so` outside the image at the pin and add it at `/opt/tensorfold/native/lib/` in a derived image (issue 8 has the steps); a server that already refused one video request keeps refusing until restarted |
+| A prompt cache far under `PROMPT_CACHE_GIB`; `prompt cache: the room funds X GiB of the Y GiB` | The cap never binds: the cache is the remainder after the pool and the streams' fixed parts. Set `CACHE_FIRST=1`, or lower `PARALLEL` or `CONTEXT` (see [Memory](#memory-on-a-128-gb-unified-spark)) |
+| An exact value (an id, a hash) copied wrong in a JSON reply on `ABLIT=1` | The Ablit weights' own error (issue 9): the published weights copy it right on the same engine and request, and the Ablit weights do too with thinking on. See [Ablit weights](#ablit-weights) |
+| `libtfvideo.so is required for video inputs` (HTTP 500 on a `video_url` part) | The default image builds no video runtime. Set `WITH_VIDEO=1` and `./start.sh restart` (it builds its own image tag); a server that already refused one video request keeps refusing until restarted |
 | Raw `<tool_call>name<arg_key>…</arg_key><arg_value>…</arg_value></tool_call>` text in an agent's reply (Hermes and others) | The client sent that turn without the tool the model called: no `tools`, `tool_choice: "none"` (an agent's final-summary turn after its iteration limit, typically), or a list without that tool. The server only turns calls to offered tools into `tool_calls`. Fix the client (raise its iteration limit, enable the toolset), or turn on the guard: [Hermes and other agents](#hermes-and-other-agents-the-tool-call-guard) |
 | The first start takes long | Each rank hashes all 164 GiB once (cached in `CACHE_DIR`); raise `WAIT_TIMEOUT` |
 
@@ -322,7 +329,10 @@ only ever stops containers labelled `tf.recipe=glm53-spark`.
 [Mia-AiLab/GLM-5.3-Flash-EXL3-4bpw-TensorFold-Ablit](https://huggingface.co/Mia-AiLab/GLM-5.3-Flash-EXL3-4bpw-TensorFold-Ablit),
 the same checkpoint abliterated, at the revision pinned in `scripts/config.sh`. The repository is gated: `start.sh`
 checks that `HF_TOKEN` reaches it before building or downloading. Thinking off, the recipe's default, is also how
-these weights give their best results.
+these weights give their best results. One measured exception (issue 9): asked to return a record id
+`LANTERN-ca6241dd2684` in schema-constrained JSON, the Ablit weights drop a digit, with drafting on or off; the
+published weights copy it exactly on the same engine and request, and the Ablit weights do too with thinking on. For
+replies that must copy ids, hashes or numbers exactly, serve `ABLIT=0` or turn thinking on for those requests.
 
 ## Credits
 

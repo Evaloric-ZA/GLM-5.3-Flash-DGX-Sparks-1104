@@ -37,6 +37,9 @@ SM="${SM:-121}"                                  # DGX Spark GB10: sm_121 (the e
 ZIG_CPU="${ZIG_CPU:-native}"                     # the image is built on a Spark and runs on Sparks; baseline to move it
 NCCL_WHEEL="${NCCL_WHEEL:-}"                     # non-empty: install this nvidia-nccl-cu13 version over the base image's
 IMAGE="${IMAGE:-}"                               # empty: tensorfold-glm53-spark:<PATCHES_HASH>
+# WITH_VIDEO=1 builds libtfvideo.so (FFmpeg 9.0.2, static) into the image, so VISION=1 serves video_url parts too
+# (issue 8). It adds a few minutes to a build and has its own image tag. 0 (default): video_url parts return HTTP 500.
+WITH_VIDEO="${WITH_VIDEO:-0}"
 IMAGE_REPO="${IMAGE_REPO:-tensorfold-glm53-spark}"
 DOCKER_BUILD_FLAGS="${DOCKER_BUILD_FLAGS:-}"     # extra docker build flags, word-split (e.g. --progress=plain)
 TF_BIN="${TF_BIN:-/usr/local/bin/tensorfold-native}"
@@ -167,6 +170,11 @@ HEAD="${HEAD:-bf16}"                             # TF_GLM_HEAD_BITS for the LM h
 # Spark toward its floor: rank 0 also carries the HTTP server and the vision tower.
 MEMORY_RESERVE_GIB="${MEMORY_RESERVE_GIB:-12}"
 PROMPT_CACHE_GIB="${PROMPT_CACHE_GIB:-}"         # --prompt-cache-gib of device pages (empty: the engine's default)
+# CACHE_FIRST=1 (engine patch 0108, TF_PROMPT_CACHE_FIRST): PROMPT_CACHE_GIB is set aside before the room is counted
+# in whole CONTEXT windows, so the PARALLEL streams share the pages left (one window at least) instead of the cache
+# getting what whole windows leave. For long agent sessions: PARALLEL streams and a cache that keeps them. Needs
+# PROMPT_CACHE_GIB. 0 (default): windows first, as before.
+CACHE_FIRST="${CACHE_FIRST:-0}"
 # TF_GLM_HOST_CACHE_GIB, the kept prompt states' pinned host tier. On a discrete card that memory is free; on GB10 it
 # is the very memory the KV pool and the weights draw on, and a state in it costs a copy to restore, so the tier is off
 # here and PROMPT_CACHE_GIB (device pages) is the one to raise. Unset or auto would pin a quarter of MemAvailable,

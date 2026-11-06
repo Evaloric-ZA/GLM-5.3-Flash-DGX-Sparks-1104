@@ -1,5 +1,18 @@
 # Changelog
 
+- **2026-11-06** -- engine patch 0108: `CACHE_FIRST=1` (`TF_PROMPT_CACHE_FIRST`), opt-in. The pool counted the room in
+  whole windows before the prompt cache, so `PROMPT_CACHE_GIB` only capped the remainder (issue 7: crystal8194,
+  tanchunsiong, unitea1992; issue 3). With it, the cache is set aside first and the streams share the pages left, one
+  window at least. On the pair at `PARALLEL=8` and the 1M window with `PROMPT_CACHE_GIB=12`: a 9.3-9.7 GiB cache; a
+  380k-token conversation resumes 99% cached after eight ~31k ones (3.0 s instead of 234 s) and all eight resume;
+  hashes and decode unchanged; three concurrent agent loops as fast. Off, the plan is as before. The startup log says
+  when the room funds less cache than `--prompt-cache-gib` asks, and names what frees more (tanchunsiong's
+  suggestion). README: the long-session setting is now `CACHE_FIRST=1 PROMPT_CACHE_GIB=12` at eight streams.
+  `WITH_VIDEO=1`, opt-in: `docker/Dockerfile` builds `libtfvideo.so` over upstream's static FFmpeg 9.0.2 into its own
+  image tag (the default image and its tag are unchanged), so `VISION=1` serves `video_url` parts (issue 8, chai-md;
+  checked: a three-colour clip described in order, text hashes unchanged). Issue 9 (pepelaskov): the dropped digit
+  reproduces on the Ablit weights only; the published weights copy the id exactly on the same image and request, and
+  so do the Ablit weights with thinking on (README "Ablit weights").
 - **2026-11-06** -- README: a measured setting for long agent sessions, `PARALLEL=2 CONTEXT=524288
   PROMPT_CACHE_GIB=32`. On the pair, a 382k-token conversation, then eight unique ~31k ones, then the long one's next
   turn: with this setting rank 0 funds a 12.4 GiB cache, the long turn resumes 100% cached (0.8 s instead of 237 s)
