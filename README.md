@@ -152,6 +152,13 @@ prompt's first token comes about 47% later than at `1`. Replies are byte-identic
   at `f350cd3e`). A 1.2 GiB cache kept one conversation up to 252k tokens but not 378k, and two of eight ~38k
   conversations recalled newest first. For many long-lived agent sessions, size `PARALLEL` and `CONTEXT` for the
   cache (see above) rather than for the stream count.
+- **Long agent sessions (one 400k conversation beside others): `PARALLEL=2 CONTEXT=524288 PROMPT_CACHE_GIB=32`.**
+  Measured on the pair (2026-11-06): a 382k-token conversation, then eight unique ~31k ones, then the 382k one's
+  next turn, then the eight recalled newest first. Rank 0 funds a 12.4 GiB cache. The 382k turn resumes 100%
+  cached (0.8 s instead of 237 s), and all eight short ones resume at 94%. Decode and reply hashes are unchanged.
+  The served `PARALLEL=8` (3.4 GiB cache) resumes 1 of 8 and not the long one. `PARALLEL=4 PROMPT_CACHE_GIB=16`,
+  with or without `CONTEXT=524288` (5.1-5.4 GiB), resumes 3-4 of 8 and not the long one. The trade is two streams
+  at once. There is no disk or host tier yet, so a session larger than the cache is prefilled again in full.
 - `HOST_CACHE_GIB=0` on GB10 (a pinned host tier takes the pool's own memory). The memory guard stops the pair in
   order when a Spark stays under 2.5 GiB available, and logs that to `logs/current/memguard.log`. To free memory:
   lower `PARALLEL`, `DENSE`/`HEAD` bits or `VISION=0`; raise `MEMORY_RESERVE_GIB` on out-of-memory errors.
