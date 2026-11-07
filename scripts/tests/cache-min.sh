@@ -50,5 +50,5 @@ check 'rank 1 short stops both' "$(run 9 ', a 9.7 GiB prompt cache' ', a 8.7 GiB
   'log: Prompt cache: rank 0 funds 9.7 GiB (PROMPT_CACHE_MIN_GIB=9).|stopped|fail: E_CACHE|'
 check 'no cache stops both' "$(run 1 ', no prompt cache' ', a 9.7 GiB prompt cache')" 'stopped|fail: E_CACHE|'
 check 'rank 0 without a startup line stops both' "$(run 9 - ', a 9.7 GiB prompt cache')" 'stopped|fail: E_CACHE|'
-check 'rank 1 without a startup line warns' "$(run 9 ', a 9.7 GiB prompt cache' -)" \
-  'log: Prompt cache: rank 0 funds 9.7 GiB (PROMPT_CACHE_MIN_GIB=9).|warn: W_CACHE_MIN|status 0|'
+check 'rank 1 without a startup line is rank 0 only, no warning' "$(run 9 ', a 9.7 GiB prompt cache' -)" \
+  'log: Prompt cache: rank 0 funds 9.7 GiB (PROMPT_CACHE_MIN_GIB=9).|status 0|'

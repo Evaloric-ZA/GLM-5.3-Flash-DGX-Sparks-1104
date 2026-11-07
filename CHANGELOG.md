@@ -34,7 +34,8 @@
   the cache but does not guarantee it, even with `CACHE_FIRST=1`: the cache is what that start's room leaves after the
   streams' windows, and the room moved between 17.8 and 18.9 GiB across starts with no config change (issue 16,
   jds1-ai). "no prompt cache" and a cache in host memory count as 0 on the device; a rank 0 log with no startup line
-  stops the start; a rank 1 log without one warns (`W_CACHE_MIN`) and checks rank 0 only. Test:
+  stops the start; rank 1, which follows rank 0's plan and prints no startup line on the pair, is checked only when
+  its log has one. Test:
   `scripts/tests/cache-min.sh` (startup lines in the engine's formats, ranks stubbed), run by `scripts/tests/run.sh`.
 - **2026-11-06** -- `EFFORT_LINE=thinking` (default): the template's `<|system|>Reasoning Effort: Max` line with
   thinking on only, as TensorFold v0.6.0's recipe wrote it; `always` serves the template as it is. The checkpoint's

@@ -454,7 +454,7 @@ check_cache_min() {
         stop_both
         fail E_CACHE "PROMPT_CACHE_MIN_GIB=$PROMPT_CACHE_MIN_GIB: rank 0's log has no startup line (\"streams at once\"), so the start cannot be checked; both ranks are stopped. See $f."
       fi
-      warn W_CACHE_MIN "Rank $r's log has no startup line (\"streams at once\"); PROMPT_CACHE_MIN_GIB checked rank 0 only. See $f."
+      # Rank 1 follows rank 0's plan and prints no startup line on the pair: rank 0's line is the check.
       continue
     fi
     if ! at_least "$got" "$PROMPT_CACHE_MIN_GIB"; then
