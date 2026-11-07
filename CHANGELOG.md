@@ -1,5 +1,18 @@
 # Changelog
 
+- **2026-11-07** -- The pair serves `SERVE_EXTRA_ARGS='--top-k 20'` (in its `scripts/local.sh`): a request that
+  sends no `top_k` was drawn from the whole top-p 0.95 nucleus of `generation_config.json` (temperature 1.0, top_p
+  0.95, no top_k: `serve`'s `--top-k` is unset by default), where the old deployment used 20. Raised by raw, malformed
+  tool-call markup in an agent turn (`<arg_key>` straight after the tool name) on the 2x RTX PRO 6000 bundle with the
+  Ablit weights; a seed replay there was said to show a rank-252 draw. **Not reproduced on this pair, so the fix is a
+  mitigation and the cause is unproven**: 520 sampled agent-shaped requests (text, then a tool call; 400 thinking off,
+  120 thinking on) came back 520 correct with no `top_k`, and 520 with `top_k 20` likewise; `logprobs` are refused
+  by this backend, so a draw's rank cannot be read here. Copying a tool-call markup line 30 times broke 30% of lines
+  greedily and 33-36% sampled, with `top_k 20` or `min_p 0.001` or neither, the same lines at the same seeds, so those
+  breaks are the model's own choices (they went away with `EFFORT_LINE=thinking`, below). With it set: greedy hashes
+  unchanged (`00ca87eb05ae` / `c88e25e03b02` / `650453259cef`); T=0.7 prose decode 39.2 tok/s at one stream and 81.4
+  at four against 40.2 / 80.1 with `top_k: 0` sent, the same within run spread (6 runs each); startup line 4,098 pages
+  and a 3.1 GiB cache.
 - **2026-11-07** -- `start.sh`: an exported `NCCL_SOCKET_IFNAME` that is an NCCL exclusion list (`^lo,docker,...`,
   often from `/etc/profile.d`) no longer stops the start with `E_CONFIG`; it is set aside with a `W_CONFIG` warning and
   the link is found as when empty (issue 17, mjjjjaazing). Test: `scripts/tests/nccl-ifname.sh`.
@@ -11,8 +24,16 @@
   on the memory plan (issue 17). From outside PRs: `cache-replay.py` names warm turns 0104 and sends `SERVED_NAME`
   (#12), the settings table's `HEAD` and `REASONING_EFFORT` defaults (#13), and the startup check's page count with
   `CACHE_FIRST=1` (#14), all by travellingsoldier85.
-
-- **2026-11-06** -- engine patch 0110: `KV_SHARD=1` (`TF_GLM_KV_SHARD`), opt-in, KV sharding at TP=2 by
+- **2026-11-07** -- `PROMPT_CACHE_MIN_GIB`, opt-in (empty by default; #21 by laidick): `start.sh` reads the prompt cache each rank's
+  startup line funds and, before LIVE, stops both ranks with `E_CACHE` when one funds less. `PROMPT_CACHE_GIB` caps
+  the cache but does not guarantee it, even with `CACHE_FIRST=1`: the cache is what that start's room leaves after the
+  streams' windows, and the room moved between 17.8 and 18.9 GiB across starts with no config change (issue 16,
+  jds1-ai). "no prompt cache" and a cache in host memory count as 0 on the device; a rank 0 log with no startup line
+  stops the start; rank 1, which follows rank 0's plan and prints no startup line on the pair, is checked only when
+  its log has one. Test:
+  `scripts/tests/cache-min.sh` (startup lines in the engine's formats, ranks stubbed), run by `scripts/tests/run.sh`.
+  On the pair: `PROMPT_CACHE_MIN_GIB=1` starts (rank 0 funds 3.1 GiB), `=20` stops both ranks with `E_CACHE`.
+- **2026-11-06** -- engine patch 0110: `KV_SHARD=1` (`TF_GLM_KV_SHARD`), opt-in (#24), KV sharding at TP=2 by
   Robert Wojciechowski ([@wojo](https://github.com/wojo), X [@rwojo](https://x.com/rwojo)), toward upstream [#1431](https://github.com/ashhart/TensorFold/issues/1431). Each stream's FP8
   latent rows live on its owner Spark alone, so the pool holds about twice the tokens (4,098 to 8,196 pages at the
   defaults). On the pair: every greedy reply identical to unsharded across eight request sets (1-8 concurrent
@@ -20,7 +41,12 @@
   first token unchanged; `tf-cuda-test glm-kv-shard-check` byte-identical to an unsharded twin over 10 paths, kept
   states through the disk image included. With `CACHE_FIRST=1 PROMPT_CACHE_GIB=6 LEARN_GIB=30`: a 4.1 GiB cache and
   3.15M tokens of pool a rank, and a 102.5k conversation resumed from disk after a restart in 1.13 s.
-- **2026-11-06** -- engine patch 0109: `LEARN_GIB` (`--learn-conversations`), opt-in, a backport of upstream
+  Re-measured on the maintainer's pair (2026-11-07, image `8734689e7a73`, published weights): 6,147 pages and a
+  4.3 GiB cache with `CACHE_FIRST=1 PROMPT_CACHE_GIB=6` (4,098 pages and 3.1 GiB unsharded); greedy hashes equal;
+  decode 37.5 / 55.4 tok/s at one stream (prose / code; unsharded 38.3 / 56.4), 77-78 at four (79-80);
+  `glm-kv-shard-check` passes on both ranks (10 paths, 510 rows); an 18k and a 101k conversation resume from disk
+  after a restart under sharding with the in-memory reply.
+- **2026-11-06** -- engine patch 0109: `LEARN_GIB` (`--learn-conversations`), opt-in (#22), a backport of upstream
   [#1411](https://github.com/ashhart/TensorFold/pull/1411) by Robert Wojciechowski ([@wojo](https://github.com/wojo), X [@rwojo](https://x.com/rwojo)). Kept prompt states also go to disk on
   the head Spark, every rank's part, so conversations survive eviction and restarts. On the pair at the served
   `PARALLEL=8` and 1M window: off, greedy hashes equal main's (6 of 6) and decode is unchanged (35.07 against 34.60
@@ -29,15 +55,11 @@
   after a restart in 1.8 s (cold 58.4 s); every reply equal to the in-memory resume. Damaged state or block files are
   refused and the turn prefills. Writing a state costs a stream decoding beside it about 1%. Host tests: the disk image
   round trip on a device-only lease and on one that runs onto 0015's host pages.
-- **2026-11-07** -- `PROMPT_CACHE_MIN_GIB`, opt-in (empty by default): `start.sh` reads the prompt cache each rank's
-  startup line funds and, before LIVE, stops both ranks with `E_CACHE` when one funds less. `PROMPT_CACHE_GIB` caps
-  the cache but does not guarantee it, even with `CACHE_FIRST=1`: the cache is what that start's room leaves after the
-  streams' windows, and the room moved between 17.8 and 18.9 GiB across starts with no config change (issue 16,
-  jds1-ai). "no prompt cache" and a cache in host memory count as 0 on the device; a rank 0 log with no startup line
-  stops the start; rank 1, which follows rank 0's plan and prints no startup line on the pair, is checked only when
-  its log has one. Test:
-  `scripts/tests/cache-min.sh` (startup lines in the engine's formats, ranks stubbed), run by `scripts/tests/run.sh`.
-- **2026-11-06** -- `EFFORT_LINE=thinking` (default): the template's `<|system|>Reasoning Effort: Max` line with
+  Re-measured on the maintainer's pair (2026-11-07): off, all greedy hashes, the startup line (4,098 pages, 3.1 GiB)
+  and decode (38.3 / 56.4 at one stream, 79-80 at four) equal main's; on (`LEARN_GIB=30`), after a full restart a
+  101.5k-token conversation resumes 98,304 tokens cached (first token 3.6 s) and an 18.6k one 16,384, both replies
+  byte-identical to the in-memory resume; rank 1 logs clean.
+- **2026-11-06** -- `EFFORT_LINE=thinking` (default; #23 by wagzee): the template's `<|system|>Reasoning Effort: Max` line with
   thinking on only, as TensorFold v0.6.0's recipe wrote it; `always` serves the template as it is. The checkpoint's
   template (and the vision copy) sets the line to Max unless a request's effort is low or high, so every prompt
   carried it, thinking off included (7 tokens; `/tokenize` on a one-line user message: 27 against 20), and a
@@ -52,6 +74,10 @@
   reasoning no longer helping the thinking-off letters (v0.6.0's run: 88.1%); reason, arith, track and GSM8K
   byte-identical to the run before (their prompts think, so the line stays). No reply ends on `length` any more.
   README: the setting, "The effort line", a troubleshooting row.
+  Checked on the pair (2026-11-07): a one-line thinking-off prompt is 8 tokens instead of 15, thinking on 14 both
+  ways; "binary representation of 217, digits only" at 64 tokens answers `11011001` (it ran out of tokens before);
+  the thinking-on greedy hash is unchanged (`650453259cef`). Copying a tool-call markup line 30 times with thinking
+  off went from 30-36% malformed lines (greedy included, `top_k` 20 or not) to 3 of 1,419.
 - **2026-11-06** -- engine patch 0108: `CACHE_FIRST=1` (`TF_PROMPT_CACHE_FIRST`), opt-in. The pool counted the room in
   whole windows before the prompt cache, so `PROMPT_CACHE_GIB` only capped the remainder (issue 7: crystal8194,
   tanchunsiong, unitea1992; issue 3). With it, the cache is set aside first and the streams share the pages left, one
