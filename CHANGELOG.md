@@ -1,5 +1,14 @@
 # Changelog
 
+- **2026-11-07** -- `scripts/tests/patch-numbers.sh`: a number in `patches/engine/` names one patch, checked by
+  `scripts/tests/run.sh` (issue 15, travellingsoldier85's check). README: with `CACHE_FIRST=1`, `PROMPT_CACHE_GIB` is a
+  priority, not a floor, and a larger ask can fund more cache by costing the streams a window (issue 16, jds1-ai's
+  arms and formula; laidick); troubleshooting rows for an exported `NCCL_SOCKET_IFNAME` exclusion list (issue 17,
+  mjjjjaazing) and for clones from before the 2026-11-04 history (issue 16); the Ablit weights' drafter cost depends
+  on the memory plan (issue 17). From outside PRs: `cache-replay.py` names warm turns 0104 and sends `SERVED_NAME`
+  (#12), the settings table's `HEAD` and `REASONING_EFFORT` defaults (#13), and the startup check's page count with
+  `CACHE_FIRST=1` (#14), all by travellingsoldier85.
+
 - **2026-11-06** -- engine patch 0108: `CACHE_FIRST=1` (`TF_PROMPT_CACHE_FIRST`), opt-in. The pool counted the room in
   whole windows before the prompt cache, so `PROMPT_CACHE_GIB` only capped the remainder (issue 7: crystal8194,
   tanchunsiong, unitea1992; issue 3). With it, the cache is set aside first and the streams share the pages left, one

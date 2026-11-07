@@ -167,6 +167,12 @@ prompt's first token comes about 47% later than at `1`. Replies are byte-identic
   long one. The trade: the streams together hold one window's tokens at a time instead of two, so a second
   request past ~1M tokens of live context waits. `PARALLEL=2 CONTEXT=524288 PROMPT_CACHE_GIB=32` also keeps them
   (12.4 GiB), at two streams. There is no disk tier yet, so nothing survives a restart.
+  With `CACHE_FIRST=1`, `PROMPT_CACHE_GIB` is a priority, not a floor: it is taken off the room only to count the
+  streams' whole windows, and the cache then gets what those windows leave, up to the ask. So a larger ask can fund
+  more cache than a smaller one, by costing the streams a window, and a lower `CONTEXT` alone can buy a second window
+  instead of more cache. On a second pair (issue 16, 17.8-18.9 GiB of room) `CONTEXT=524288` funded 9.7 GiB with
+  `PROMPT_CACHE_GIB=12` (two windows, 2,050 pages) and 12.9 GiB with `14` (one window, 1,032 pages). Read the page
+  count and the funded cache in the startup line after every change.
 - `HOST_CACHE_GIB=0` on GB10 (a pinned host tier takes the pool's own memory). The memory guard stops the pair in
   order when a Spark stays under 2.5 GiB available, and logs that to `logs/current/memguard.log`. To free memory:
   lower `PARALLEL`, `DENSE`/`HEAD` bits or `VISION=0`; raise `MEMORY_RESERVE_GIB` on out-of-memory errors.
@@ -322,7 +328,9 @@ only ever stops containers labelled `tf.recipe=glm53-spark`.
 | A long prompt dies in a RoCE gather | The gather has no wait setting at this pin; `ROCE=off` puts every exchange on NCCL |
 | `--parallel N needs … GiB`, `[memguard]` | The window or stream count does not fit, or a Spark went under the floor: lower `CONTEXT`/`PARALLEL` or raise `MEMORY_RESERVE_GIB` |
 | No prompt cache in the startup line, `cannot keep one state` | The page pool took a third window: raise `MEMORY_RESERVE_GIB` (the engine's own hint to lower it is the wrong direction here; see [Memory](#memory-on-a-128-gb-unified-spark)) |
-| A prompt cache far under `PROMPT_CACHE_GIB`; `prompt cache: the room funds X GiB of the Y GiB` | The cap never binds: the cache is the remainder after the pool and the streams' fixed parts. Set `CACHE_FIRST=1`, or lower `PARALLEL` or `CONTEXT` (see [Memory](#memory-on-a-128-gb-unified-spark)) |
+| A prompt cache far under `PROMPT_CACHE_GIB`; `prompt cache: the room funds X GiB of the Y GiB` | The cap never binds: the cache is the remainder after the pool and the streams' fixed parts. Set `CACHE_FIRST=1`, or lower `PARALLEL` or `CONTEXT` (see [Memory](#memory-on-a-128-gb-unified-spark)). With `CACHE_FIRST=1` already on, the pool kept a whole window more than the cache left room for: raise `PROMPT_CACHE_GIB` until the page count drops by a window (issue 16) |
+| `[E_CONFIG] NCCL_SOCKET_IFNAME must be a netdev name.` though `scripts/local.sh` sets one | An exported value wins over `local.sh`, often an NCCL exclusion list such as `^lo,docker` from `/etc/profile.d` (issue 17). The recipe needs one netdev: `env -u NCCL_SOCKET_IFNAME ./start.sh` finds the link, or pass `NCCL_SOCKET_IFNAME=<netdev> ./start.sh` |
+| `git pull` will not fast-forward a clone from before 2026-11-04 | The history was rewritten that day, so a clone from then (such as `0049d7c`) shares no commit with `main`: take a fresh clone and carry `scripts/local.sh` and `.env` over (issue 16) |
 | An exact value (an id, a hash) copied wrong in a JSON reply on `ABLIT=1` | The Ablit weights' own error (issue 9): the published weights copy it right on the same engine and request, and the Ablit weights do too with thinking on. See [Ablit weights](#ablit-weights) |
 | `libtfvideo.so is required for video inputs` (HTTP 500 on a `video_url` part) | The default image builds no video runtime. Set `WITH_VIDEO=1` and `./start.sh restart` (it builds its own image tag); a server that already refused one video request keeps refusing until restarted |
 | Raw `<tool_call>name<arg_key>…</arg_key><arg_value>…</arg_value></tool_call>` text in an agent's reply (Hermes and others) | The client sent that turn without the tool the model called: no `tools`, `tool_choice: "none"` (an agent's final-summary turn after its iteration limit, typically), or a list without that tool. The server only turns calls to offered tools into `tool_calls`. Fix the client (raise its iteration limit, enable the toolset), or turn on the guard: [Hermes and other agents](#hermes-and-other-agents-the-tool-call-guard) |
@@ -338,6 +346,9 @@ these weights give their best results. One measured exception (issue 9): asked t
 `LANTERN-ca6241dd2684` in schema-constrained JSON, the Ablit weights drop a digit, with drafting on or off; the
 published weights copy it exactly on the same engine and request, and the Ablit weights do too with thinking on. For
 replies that must copy ids, hashes or numbers exactly, serve `ABLIT=0` or turn thinking on for those requests.
+DFlash2 accepts fewer drafts on these weights; measure them at your own memory settings before choosing a drafter.
+One pair (issue 17) saw drafting turn into a net loss at `local.sh.example`'s `PARALLEL=4 MEMORY_RESERVE_GIB=12`, and
+about 15% below the published weights (74.6% against 79.8% accepted) at the served `PARALLEL=8` with `CACHE_FIRST=1`.
 
 ## Credits
 
