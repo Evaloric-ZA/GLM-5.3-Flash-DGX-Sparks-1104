@@ -1,5 +1,8 @@
 # Changelog
 
+- **2026-11-07** -- `start.sh`: an exported `NCCL_SOCKET_IFNAME` that is an NCCL exclusion list (`^lo,docker,...`,
+  often from `/etc/profile.d`) no longer stops the start with `E_CONFIG`; it is set aside with a `W_CONFIG` warning and
+  the link is found as when empty (issue 17, mjjjjaazing). Test: `scripts/tests/nccl-ifname.sh`.
 - **2026-11-07** -- `scripts/tests/patch-numbers.sh`: a number in `patches/engine/` names one patch, checked by
   `scripts/tests/run.sh` (issue 15, travellingsoldier85's check). README: with `CACHE_FIRST=1`, `PROMPT_CACHE_GIB` is a
   priority, not a floor, and a larger ask can fund more cache by costing the streams a window (issue 16, jds1-ai's

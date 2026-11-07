@@ -90,6 +90,12 @@ validate_config() {
   done
   [[ -z "$TF_ROCE_HCA" || "$TF_ROCE_HCA" =~ ^[A-Za-z0-9_]+(,[A-Za-z0-9_]+)*$ ]] || fail E_CONFIG 'TF_ROCE_HCA must be comma-separated RDMA device names.'
   [[ -z "$NCCL_IB_GID_INDEX" || "$NCCL_IB_GID_INDEX" =~ ^[0-9]+$ ]] || fail E_CONFIG 'NCCL_IB_GID_INDEX must be a number.'
+  # An NCCL exclusion list (^lo,docker,...), often exported for the whole box from /etc/profile.d, names no netdev: the
+  # exported value outranks scripts/local.sh, so it is set aside and the link found as when empty (issue 17).
+  if [[ "$NCCL_SOCKET_IFNAME" == ^* ]]; then
+    warn W_CONFIG "NCCL_SOCKET_IFNAME=$NCCL_SOCKET_IFNAME is an NCCL exclusion list, not the link's netdev: finding the link instead (set NCCL_SOCKET_IFNAME=<netdev> to choose one)."
+    NCCL_SOCKET_IFNAME=
+  fi
   [[ -z "$NCCL_SOCKET_IFNAME" || "$NCCL_SOCKET_IFNAME" =~ ^[A-Za-z0-9_.-]+$ ]] || fail E_CONFIG 'NCCL_SOCKET_IFNAME must be a netdev name.'
   [[ "$CONTAINER_NAME" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]] || fail E_CONFIG 'CONTAINER_NAME contains unsupported characters.'
   [[ "$CONTAINER_NAME" != tensorfold-zig-r0 && "$CONTAINER_NAME" != tensorfold-zig-r1 && "$CONTAINER_NAME" != dsv41-1017-exl3-tf ]] \
