@@ -1,5 +1,15 @@
 # Changelog
 
+- **2026-11-08** -- engine patch 0111: the image build's nvcc prints no compiler warning. A clean-machine build showed
+  49 warning lines that the builds in docs/speed's logs had carried for days: two fp8 expert prompt kernels declared a
+  kernel-local `RW` their bodies never read, `prefill_attention.cu`'s `SMEM_MAX` had no reader anywhere,
+  `glm_mm.cu`'s `Tile` kept an `SMEM` member no instantiation uses, and `flashnext_fact.cu` / `flashnext_attn.cu`
+  held `#pragma unroll` loops behind an `if constexpr` branch whose taken side made them unreachable (nvcc #128-D,
+  once per such kernel). The declarations are gone; the two loops sit behind an inverted `if constexpr` (the
+  `flashnext_fact` wrap covers the rest of its iteration's scales, rows and epilogue), so each instantiation compiles
+  only the side it can reach. No kernel's arithmetic, launch shape or output changes: all six files' fatbins compile
+  byte-identical to the unpatched build (nvcc 13.3, sm_121), and every fatbin of the recipe's build now compiles
+  warning-free.
 - **2026-11-07** -- The pair serves `SERVE_EXTRA_ARGS='--top-k 20'` (in its `scripts/local.sh`): a request that
   sends no `top_k` was drawn from the whole top-p 0.95 nucleus of `generation_config.json` (temperature 1.0, top_p
   0.95, no top_k: `serve`'s `--top-k` is unset by default), where the old deployment used 20. Raised by raw, malformed
