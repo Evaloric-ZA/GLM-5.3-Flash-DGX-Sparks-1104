@@ -19,7 +19,7 @@
 
 **Engine: TensorFold 1.1.9** (`tensorfold-native --version`), upstream commit
 [`f350cd3e`](https://github.com/ashhart/TensorFold/commit/f350cd3ea253a042e205746928271f9d8f71a82d) plus this recipe's
-110 engine patches (`patches/engine/`).
+112 engine patches (`patches/engine/`).
 
 This recipe serves GLM-5.3-Flash from an EXL3 checkpoint on **two NVIDIA DGX Sparks** (GB10, 128 GB unified memory
 each) at tensor parallel 2, one rank on each Spark, over their ConnectX-7 link. It uses TensorFold's native Zig/CUDA
@@ -49,7 +49,7 @@ The engine is TensorFold 1.1.9 at commit `f350cd3e` ([ashhart/TensorFold](https:
 
 ## What is checked
 
-110 patches apply to `f350cd3e` with no rejects; the image builds on aarch64 for `sm_121` (about 6 minutes) and
+112 patches apply to `f350cd3e` with no rejects; the image builds on aarch64 for `sm_121` (about 6 minutes) and
 reaches the worker by content; link discovery finds both PCIe twins of the cabled port and the RoCE v2 GID that
 holds each port's own IPv4; NCCL and the engine's RDMA all-gather run over the cable; the full 1,048,576-token window
 serves 8 streams beside a 3.6 GiB prompt cache; greedy replies are byte-stable across every change
@@ -302,9 +302,28 @@ What it does, streamed or not:
 - A request that offers no tools (none sent, or `tool_choice: "none"`) whose history called tools gets a closing system
   note that tools are unavailable for this reply, and any `<tool_call>` block the model writes anyway is removed. The
   reply is then prose (the model answers from what it has) or empty (it only wanted to call).
-- A request that offers tools has calls to tools it did not offer, and malformed calls, removed; calls to offered tools
-  come back as `tool_calls` as before.
+- A request that offers tools has well-formed calls to tools it did not offer removed; calls to offered tools come back
+  as `tool_calls` as before. A malformed call (no name, a name over two lines, broken JSON) stays in the reply as
+  text, as with the guard off, so the client and the log show what the model wrote. When removing calls would leave
+  the reply with no text and no call, they stay too: an empty reply reads to an agent as a failed generation, and
+  Hermes retries it unchanged until its timeout (patch 0112).
 - Each removal is logged: `docker logs glm53-spark 2>&1 | grep "tool-call guard"`.
+
+Guard on or off, every call the server does not turn into `tool_calls` gets one log line with the request id, the
+reason (`unknown_tool_name`, `malformed`, or `unclosed` for a call cut before its closer), the tool name, the
+request's thinking mode, and what became of it:
+
+```
+tool call rejected from chatcmpl-…: malformed [''] (23 tools offered) thinking=True effort=max; kept as text
+```
+
+`docker logs glm53-spark 2>&1 | grep "tool call rejected"` lists them. To see the envelope the model wrote, add
+`export TF_TOOL_CALL_DEBUG=1` to `scripts/local.sh` and restart: each line is then followed by the envelope's text
+(escaped to one line and cut at about 1 KB). The text is the model's output, so leave it off where logs are shared.
+
+An agent error such as Hermes' `tool_call calls[0] requires a 'name'` is not the server's: Hermes offers a bridge
+tool named `tool_call` for its deferred tools, the server passed the model's call to it as `tool_calls`, and Hermes
+refused the arguments. No `tool call rejected` line goes with it.
 - Off (the default), every reply is byte-identical to a build without the patch. On, replies to ordinary requests are
   unchanged too (same greedy hashes, same speed): the guard only acts on the requests above.
 
@@ -337,9 +356,9 @@ the template as it is. A `CHAT_TEMPLATE` of your own is served as it is either w
 
 ## Engine patches
 
-`patches/engine/` holds 111 patches on TensorFold `f350cd3e`, applied in filename order at image build: 0001-0093 are
+`patches/engine/` holds 112 patches on TensorFold `f350cd3e`, applied in filename order at image build: 0001-0093 are
 the [RTX PRO 6000 recipe](https://github.com/MiaAI-Lab/GLM-5.3-Flash-2x-RTX-PRO-6000-TensorFold)'s, unchanged;
-0094-0111 are this pair's own or ported from that recipe or from upstream. None is GB10-specific: the arch-gated kernels test
+0094-0112 are this pair's own or ported from that recipe or from upstream. None is GB10-specific: the arch-gated kernels test
 `__CUDA_ARCH__ >= 1200`, which `sm_121` satisfies.
 
 | Patches | What they do |
@@ -356,11 +375,12 @@ the [RTX PRO 6000 recipe](https://github.com/MiaAI-Lab/GLM-5.3-Flash-2x-RTX-PRO-
 | 0098–0102 | **This pair's,** env-gated, defaults behaviour-identical: `TF_GLM_DFLASH2_EDGE`, `TF_GLM_PROF` on shared windows, `TF_GLM_MM_STAGES`, `TF_GLM_DFLASH2_TCONF`, `TF_GLM_DFLASH2_Q32` (the decode campaign's exact knobs, each measured neutral) |
 | 0103–0104 | From the RTX recipe: a tool call after prose that quotes a tool-call opener is the call (with a guard so a call quoted inside a call's value is never invoked); GLM warm turns, so a user message after an agent loop resumes past the loop (8,192 of 9.3K tokens cached, was 4,096) |
 | 0105 | An untyped tool parameter takes the JSON object or array the model wrote; text stays text (sibling recipe issue #180) |
-| 0107 | `TF_TOOL_CALL_GUARD=1` (opt-in, off by default): tool-call markup never reaches the client as text. A request that offers no tools (none sent, or `tool_choice: "none"`) although its history called them gets a closing system note that tools are unavailable, and any `<tool_call>` the model writes anyway is hidden; a request that offers tools has calls to tools it did not offer, and malformed calls, hidden. Streamed or whole; each hide is logged (`tool-call guard:`). Off: replies byte-identical |
+| 0107 | `TF_TOOL_CALL_GUARD=1` (opt-in, off by default): tool-call markup never reaches the client as text. A request that offers no tools (none sent, or `tool_choice: "none"`) although its history called them gets a closing system note that tools are unavailable, and any `<tool_call>` the model writes anyway is hidden; a request that offers tools has calls to tools it did not offer, and malformed calls, hidden. Streamed or whole; each hide is logged (`tool-call guard:`). Off: replies byte-identical. Narrowed by 0112 for requests that offer tools |
 | 0108 | `TF_PROMPT_CACHE_FIRST=1` (`CACHE_FIRST=1`, opt-in): the prompt cache is set aside before the room is counted in whole windows; off, the plan is as before. The startup log says when the room funds less cache than `--prompt-cache-gib` asks, and what frees more |
 | 0109 | `--learn-conversations` for GLM on CUDA (`LEARN_GIB`, off by default), a backport of upstream [#1411](https://github.com/ashhart/TensorFold/pull/1411): kept prompt states on disk, every rank's part, written behind the request and read back (ahead of a queued turn when it can) after an eviction or a restart. On this stack the disk image copies 0015's two-tier lease page by page and rank 1's part travels the follow link of 0031. `--spill-gib` and `--checkpoint-slots` are refused for GLM. Off: replies byte-identical |
 | 0110 | KV sharding (`KV_SHARD=1`, `TF_GLM_KV_SHARD`, off by default) at TP=2, toward upstream [#1431](https://github.com/ashhart/TensorFold/issues/1431): each stream's FP8 latent rows on its owner rank, a second page table pointing off-owner at a discard page, owner-computed decode and verify (no new kernel), prompts on a borrowed twin, kept states carried to another owner in 32 MiB pieces, and 0109's disk image under it. Refused by name with the MTP drafter, `--parallel 1`, other KV caches, or a part under 131k tokens. `tf-cuda-test glm-kv-shard-check` checks it against an unsharded twin byte for byte. Off: replies byte-identical |
 | 0111 | **This pair's.** The clean image build prints no compiler warning: two fp8 expert kernels' unread kernel-local `RW`, `prefill_attention`'s readerless `SMEM_MAX`, `glm_mm`'s `Tile` `SMEM` member no instantiation uses, and `flashnext_fact` / `flashnext_attn` unroll loops that sat behind an `if constexpr` they could not reach (now behind the inverted guard, so each instantiation compiles only its reachable side). No arithmetic, launch shape or output changes: all six files' fatbins compile byte-identical |
+| 0112 | **This pair's.** Each tool envelope the parser rejects is logged on its own line: request id, reason (`unknown_tool_name`, `malformed`, `unclosed`), tool name, thinking and effort, and whether it was kept or hidden; `TF_TOOL_CALL_DEBUG=1` adds the envelope text. With `TF_TOOL_CALL_GUARD=1` and tools offered, only well-formed calls to unoffered tools are hidden; malformed calls stay as text, and a reply is never emptied by the guard. Host tests: rejection reasons, the guard's hiding whole and streamed. Guard off: replies byte-identical |
 
 Every default-on patch was A/B tested against the image before it: greedy replies identical plus a measured gain.
 
@@ -390,7 +410,7 @@ only ever stops containers labelled `tf.recipe=glm53-spark`.
 | `[E_CACHE] Rank N funds a X GiB prompt cache, under PROMPT_CACHE_MIN_GIB` | That start's room funded less cache than the minimum (the room varies by a GiB or more between starts). Lower `PARALLEL` or `CONTEXT`; with `CACHE_FIRST=1`, a larger `PROMPT_CACHE_GIB` can fund more, because it can cost the streams a whole window (issue 16); or lower the minimum |
 | An exact value (an id, a hash) copied wrong in a JSON reply on `ABLIT=1` | The Ablit weights' own error (issue 9): the published weights copy it right on the same engine and request, and the Ablit weights do too with thinking on. See [Ablit weights](#ablit-weights) |
 | `libtfvideo.so is required for video inputs` (HTTP 500 on a `video_url` part) | The default image builds no video runtime. Set `WITH_VIDEO=1` and `./start.sh restart` (it builds its own image tag); a server that already refused one video request keeps refusing until restarted |
-| Raw `<tool_call>name<arg_key>…</arg_key><arg_value>…</arg_value></tool_call>` text in an agent's reply (Hermes and others) | The client sent that turn without the tool the model called: no `tools`, `tool_choice: "none"` (an agent's final-summary turn after its iteration limit, typically), or a list without that tool. The server only turns calls to offered tools into `tool_calls`. Fix the client (raise its iteration limit, enable the toolset), or turn on the guard: [Hermes and other agents](#hermes-and-other-agents-the-tool-call-guard) |
+| Raw `<tool_call>name<arg_key>…</arg_key><arg_value>…</arg_value></tool_call>` text in an agent's reply (Hermes and others) | The client sent that turn without the tool the model called: no `tools`, `tool_choice: "none"` (an agent's final-summary turn after its iteration limit, typically), or a list without that tool. The server only turns calls to offered tools into `tool_calls`. Fix the client (raise its iteration limit, enable the toolset), or turn on the guard: [Hermes and other agents](#hermes-and-other-agents-the-tool-call-guard). If the tool was offered, the model wrote a malformed call: `docker logs glm53-spark 2>&1 \| grep "tool call rejected"` gives the request id and reason, and `TF_TOOL_CALL_DEBUG=1` the text |
 | The first start takes long | Each rank hashes all 164 GiB once (cached in `CACHE_DIR`); raise `WAIT_TIMEOUT` |
 
 ## Ablit weights

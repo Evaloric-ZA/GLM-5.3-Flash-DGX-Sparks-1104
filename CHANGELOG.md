@@ -1,5 +1,19 @@
 # Changelog
 
+- **2026-11-09** -- engine patch 0112: rejected tool calls are logged one by one, and `TF_TOOL_CALL_GUARD=1` no longer
+  empties replies. A Hermes Agent report (2026-11-06, guard on) showed 25 replies of 436 with calls hidden on requests
+  that offered tools, 11 of them left empty, and Hermes retrying each empty reply unchanged until its 39 s timeout;
+  the log said only `kept N malformed or unoffered tool envelopes as content`, with no request id, name or reason.
+  Now each envelope the parser rejects gets `tool call rejected from ID: REASON ['NAME'] (N tools offered)
+  thinking= effort=; FATE` (reasons `unknown_tool_name`, `malformed`, and `unclosed` for a call the end token cut
+  before its closer), and `TF_TOOL_CALL_DEBUG=1` adds the envelope's text. With tools offered the guard hides only
+  well-formed calls to unoffered tools: malformed calls stay as text, and a reply that hiding would leave with no text
+  and no call keeps its calls. The no-tools guard path is unchanged; guard off, replies are byte-identical apart from
+  the log. The report's "nameless calls passed through" (Hermes' `tool_call calls[0] requires a 'name'`) is Hermes'
+  own `tool_call` bridge tool refusing the model's arguments, not a server leak (host test added). Host tests: 64
+  `test-tool-parse-host`, 19 `test-tool-visibility-http-host`, 956 across `test-server-cpu` and the tool, JSON-answer
+  and recovery steps, all passing; the 112 patches apply to `f350cd3e`. Not yet measured on the pair: a rebuilt image
+  and a day of live agent traffic. Response to the report: `docs/issue-2026-11-06-tool-call-guard-silent.md`.
 - **2026-11-08** -- engine patch 0111: the image build's nvcc prints no compiler warning. A clean-machine build showed
   49 warning lines that the builds in docs/speed's logs had carried for days: two fp8 expert prompt kernels declared a
   kernel-local `RW` their bodies never read, `prefill_attention.cu`'s `SMEM_MAX` had no reader anywhere,
