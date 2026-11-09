@@ -139,67 +139,26 @@ prompt's first token comes about 47% later than at `1`. Replies are byte-identic
 
 ## Memory on a 128 GB unified Spark
 
-- VRAM and system RAM are one pool. The budget is `MemAvailable` plus parked pages, minus `MEMORY_RESERVE_GIB`; per
-  Spark on the served pair: model 83.3 GiB, KV pool 12.5 GiB (4,098 pages, 2.1M tokens), prompt cache 3.6 GiB, 9.5 GiB
-  reserve kept free.
-- **The page pool takes whole 1M windows before the prompt cache**, so a larger room can silently leave the cache at
-  zero and every chat turn re-reads its history. The 9.5 GiB reserve holds the pool at two windows; after a start,
-  rank 0's startup line must show `4098 pages` (with `CACHE_FIRST=1 PROMPT_CACHE_GIB=12` below: one window,
-  `2056 pages` at `PARALLEL=8`), `prompt cache: N GiB` and no `cannot keep one state` warning.
-- **The cache is funded from the remainder**, so `PROMPT_CACHE_GIB` only caps it: room after the reserve, minus the
-  pool, minus about 0.42 GiB of fixed state for each stream past the first (measured on issue 3). Eight streams at
-  the 1M window leave 0.7-0.9 GiB whatever the cap says; `PARALLEL=4` at the same window funds an 8 GiB cap, and a
-  190k-token prompt then resumes at 99%. The room itself differs by a few GiB between Sparks (DGX OS builds), so a
-  pair with more room than ours needs a larger reserve to stay at two windows, and one with less room gets a smaller
-  cache (1.2 GiB with 2.4 GiB less room, issue 7); the startup line is the check.
-- **What the cache keeps, at this pin** (issues 3 and 7): hits land on the 4,096-row prompt-chunk grid, so a
-  4,870-token prompt resumes 4,096 and up to 4,095 trailing tokens are prefilled again each turn (about 2.5 s); the
-  cache is device memory only, and without `LEARN_GIB` nothing survives a restart (the CUDA GLM family refuses
-  `--learn-conversations` at `f350cd3e`; engine patch 0109 adds it, see below). A 1.2 GiB cache kept one conversation up to 252k tokens but not 378k, and two of eight ~38k
-  conversations recalled newest first. For many long-lived agent sessions, size `PARALLEL` and `CONTEXT` for the
-  cache (see above) rather than for the stream count.
-- **Long agent sessions: `CACHE_FIRST=1 PROMPT_CACHE_GIB=12`** (engine patch 0108). The cache is set aside before
-  the room is counted in whole windows, so the eight streams share one 1M window of pages (2,056 pages, any request
-  still up to 1,048,576 tokens) and the cache gets the rest. Measured on the pair (2026-11-06) at the served
-  `PARALLEL=8` and 1M window: rank 0 funds a 9.3-9.7 GiB cache (the startup log says when the room funds less than
-  `PROMPT_CACHE_GIB` asks); a 380k-token conversation, then eight unique ~31k ones, then the long one's next turn
-  resumes 99% cached (3.0 s instead of 234 s), and all eight short ones resume. Decode and reply hashes are unchanged,
-  and three concurrent agent loops ran as fast as without it. Without it, the served config resumes 1 of 8 and not the
-  long one. The trade: the streams together hold one window's tokens at a time instead of two, so a second
-  request past ~1M tokens of live context waits. `PARALLEL=2 CONTEXT=524288 PROMPT_CACHE_GIB=32` also keeps them
-  (12.4 GiB), at two streams. Add `LEARN_GIB` (below) so the states also survive eviction and restarts.
-  With `CACHE_FIRST=1`, `PROMPT_CACHE_GIB` is a priority, not a floor: it is taken off the room only to count the
-  streams' whole windows, and the cache then gets what those windows leave, up to the ask. So a larger ask can fund
-  more cache than a smaller one, by costing the streams a window, and a lower `CONTEXT` alone can buy a second window
-  instead of more cache. On a second pair (issue 16, 17.8-18.9 GiB of room) `CONTEXT=524288` funded 9.7 GiB with
-  `PROMPT_CACHE_GIB=12` (two windows, 2,050 pages) and 12.9 GiB with `14` (one window, 1,032 pages). Read the page
-  count and the funded cache in the startup line after every change.
-- **Conversations on disk: `LEARN_GIB=30`** (engine patch 0109, `--learn-conversations`, off by default). Kept prompt
-  states also go to disk in `CACHE_DIR/learn` on the head Spark, every rank's part, so a conversation whose device
-  copy was evicted, or that outlived a restart, resumes from disk instead of prefilling again. No state is written
-  while the disk has under `LEARN_MIN_FREE_GIB` (15) free. Measured on the pair (2026-11-06, `PARALLEL=8`, 1M window,
-  DFlash2, Ablit): an 18.7k-token conversation's next turn after a restart has its first token in 1.9 s (cold: 10.7 s)
-  and after an eviction in 2.5 s; a 102.5k-token one after a restart in 1.8 s (1,013 MiB read in 1.4 s; cold: 58.4 s).
-  Replies equal the in-memory resume's. A state is written behind the request (713 MiB in 1.5 s for 53k tokens) and
-  costs a stream decoding beside it about 1% (34.57 against 34.77 tok/s). A state read from disk restarts DFlash2 at
-  its mark, as `TF_GLM_SNAP_DRAFTER=0` does for one in memory. Damaged files fail their check and the turn prefills.
-  About 0.5 GiB a 16k-token state, less for later turns, which share earlier turns' rows. Off: replies byte-identical.
-- **KV sharding: `KV_SHARD=1`** (engine patch 0110, `TF_GLM_KV_SHARD`, off by default). Each stream's FP8 latent rows
-  live on one Spark, its owner, instead of on both (the pooled index keys stay on both, as the indexer runs on both),
-  so a token costs 3,542 bytes a rank instead of 6,380 and the same memory holds about twice the tokens. The other
-  Spark's queries go to the owner for attention, so decode costs 1-4%. Measured on the pair (2026-11-06,
-  `PARALLEL=8`, 1M window, DFlash2, Ablit): at the defaults the pool goes from 4,098 to 8,196 pages (2.10M to 4.20M
-  tokens); decode 34.93 to 34.37 tok/s at one stream and 85.0 to 82.0 aggregate at eight; cold first token unchanged;
-  every greedy reply identical (decode, 1-8 concurrent streams, eight 30k contexts at once, a 102.5k conversation).
-  The pool then takes most of the room and the prompt cache gets 0.5-1.2 GiB, too little to keep a 100k-token
-  conversation (880 MiB on its owner), so **use it with `CACHE_FIRST=1 PROMPT_CACHE_GIB=6`**: a 4.1 GiB cache a
-  rank and 6,147 pages (3.15M tokens), both more than unsharded at the defaults (2.4 GiB, 2.10M). With `LEARN_GIB`
-  each Spark writes the rows it holds and a read lands on an owner chosen then: the 102.5k conversation resumed
-  after a restart with its first token in 1.13 s (1,013 MiB in 698 ms). A store written sharded is not read
-  unsharded or the reverse (its identity differs), so turning `KV_SHARD` on or off starts an empty one.
-- `HOST_CACHE_GIB=0` on GB10 (a pinned host tier takes the pool's own memory). The memory guard stops the pair in
-  order when a Spark stays under 2.5 GiB available, and logs that to `logs/current/memguard.log`. To free memory:
-  lower `PARALLEL`, `DENSE`/`HEAD` bits or `VISION=0`; raise `MEMORY_RESERVE_GIB` on out-of-memory errors.
+- VRAM and system RAM are one pool: the budget is `MemAvailable` plus parked pages, minus `MEMORY_RESERVE_GIB` (9.5).
+  Per Spark on the served pair: model 83.3 GiB, KV pool 12.5 GiB (4,098 pages, 2.1M tokens), prompt cache 3.6 GiB.
+- **The page pool takes whole 1M windows first; the prompt cache gets the rest**, so `PROMPT_CACHE_GIB` only caps
+  it, and each stream past the first costs about 0.42 GiB. Room differs by a few GiB between Sparks. After every
+  start or change, check rank 0's startup line: `4098 pages`, `prompt cache: N GiB`, no `cannot keep one state`.
+- **Cache hits land on a 4,096-token grid** (up to 4,095 trailing tokens re-prefilled, about 2.5 s), and the cache
+  lives in device memory only unless `LEARN_GIB` is set.
+- **Long agent sessions: `CACHE_FIRST=1 PROMPT_CACHE_GIB=12`** (patch 0108). The cache is set aside first; the eight
+  streams share one 1M window (2,056 pages) and rank 0 funds a 9.3-9.7 GiB cache. A 380k-token conversation resumes
+  99% cached (3.0 s instead of 234 s) alongside eight ~31k ones; decode and hashes unchanged. Trade: a second request
+  past ~1M tokens of live context waits.
+- **Conversations on disk: `LEARN_GIB=30`** (patch 0109, off by default). Prompt states are also written to
+  `CACHE_DIR/learn`, so a conversation resumes after eviction or restart: 102.5k tokens in 1.8 s instead of 58.4 s
+  cold. About 1% decode cost while writing; nothing is written under `LEARN_MIN_FREE_GIB` (15) free.
+- **KV sharding: `KV_SHARD=1`** (patch 0110, off by default). Each stream's latent rows live on one Spark, doubling
+  the pool (8,196 pages, 4.2M tokens) for 1-4% decode; greedy replies identical. Pair it with
+  `CACHE_FIRST=1 PROMPT_CACHE_GIB=6` (4.1 GiB cache, 6,147 pages). Toggling it starts an empty `LEARN_GIB` store.
+- `HOST_CACHE_GIB=0` on GB10. The memory guard stops the pair when a Spark stays under 2.5 GiB available
+  (`logs/current/memguard.log`). To free memory: lower `PARALLEL`, `DENSE`/`HEAD` bits or `VISION=0`; raise
+  `MEMORY_RESERVE_GIB` on out-of-memory errors.
 
 ## CONTEXT=auto
 
@@ -332,27 +291,17 @@ no `tools` field): the guard would remove the calls that client is waiting for.
 
 ## The effort line
 
-The checkpoint's chat template (and this recipe's vision copy of it) opens every prompt with
-`<|system|>Reasoning Effort: Max` unless a request's `reasoning_effort` is `low` or `high`: its second line maps
-anything else, an absent value included, to Max. The engine renders the template as written, so a thinking-off
-prompt carries the line too (7 tokens: `/tokenize` on a one-line user message counts 27 against 20 without it), and
-with thinking off the model reasons in its answer instead of answering. TensorFold v0.6.0's recipe, whose server
-rendered GLM's prompt in its own code, wrote the line with thinking on only.
+The checkpoint's chat template opens every prompt with `<|system|>Reasoning Effort: Max` (unless `reasoning_effort`
+is `low` or `high`), thinking off included, and a thinking-off reply then reasons in its answer. TensorFold v0.6.0's
+recipe wrote the line with thinking on only.
 
-Measured with sparkDash's quality suite on this pair (greedy, seed fixed, the same 755 items; the v0.6.0 run served
-`DENSE=fp8 KV=bf16`): with the line in every prompt, QA 79.3% (119/150) against v0.6.0's 84.0%, with five
-"binary representation, digits only" items cut by `max_tokens` 64 mid-division and four string reversals transposed;
-MMLU 91.2% (260/285) against 88.1%, the longer visible reasoning helping under its 1,024-token budget. Replaying the
-server's exact prompt through `/v1/completions` with and without the line reproduces every one of those flips, and
-the thinking-on categories (reason, arith, track, GSM8K) render the same prompt on both servers. With
-`EFFORT_LINE=thinking`, the same image: QA 86.0% (129/150), 140 of 150 replies byte-identical to v0.6.0's; MMLU
-88.4% (252/285); reason, arith, track and GSM8K byte-identical to the run with the line, and no reply ends on
-`length`.
+`EFFORT_LINE=thinking` (default) does the same: `start.sh` serves a copy of the template
+(`.state/chat_template.jinja`) that writes the line only when thinking is on. `EFFORT_LINE=always` serves the
+template as it is; a `CHAT_TEMPLATE` of your own is always served as it is.
 
-`EFFORT_LINE=thinking` (default) writes the line with thinking on only: `start.sh` copies the chosen template to
-`.state/chat_template.jinja` with its second line taking the effort from `reasoning_effort`, which the engine passes
-with thinking on and leaves null with thinking off, and serves that copy on both ranks. `EFFORT_LINE=always` serves
-the template as it is. A `CHAT_TEMPLATE` of your own is served as it is either way.
+Measured with sparkDash's quality suite (greedy, 755 items): with the line in every prompt, QA 79.3% against
+v0.6.0's 84.0% and MMLU 91.2%; with `EFFORT_LINE=thinking`, QA 86.0% (140 of 150 replies byte-identical to v0.6.0's)
+and MMLU 88.4%, thinking-on categories unchanged.
 
 ## Engine patches
 
